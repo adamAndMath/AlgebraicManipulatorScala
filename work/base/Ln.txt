@@ -1,0 +1,60 @@
+assume Ln(Complex a)
+    ln(a)=log(\e,a);
+
+work Pow(Complex a) {
+	let 3 a;
+	substitute Log.Pow[0->1](\e,-):1;
+	substitute Log.Pow[0->2](\e,-):2;
+	substitute Ln[1->0]:[1|2,1];
+} result {
+	a=ln(pow(\e,a))=pow(\e,ln(a))
+}
+
+work Inverse() {
+	let 2 log(\e,\e);
+	substitute Log.Inverse[0->1]:1;
+	substitute Ln[1->0]:0;
+} result {
+	ln(\e)=1
+}
+
+work Singularity() {
+	let 2 log(\e,1);
+	substitute Log.Singularity[0->1]:1;
+	substitute Ln[1->0]:0;
+} result {
+	ln(1)=0
+}
+
+work Distribute(Complex a, Complex b) {
+	let 2 log(\e,mult(a,b));
+	substitute Log.Distribute[0->1]:1;
+	substitute Ln[1->0]:[0|1,[0|1]];
+} result {
+	ln(mult(a,b))=add(ln(a),ln(b))
+}
+
+work DistributeSub(Complex a, Complex b) {
+	let 2 log(\e,div(a,b));
+	substitute Log.DistributeSub[0->1]:1;
+	substitute Ln[1->0]:[0|1,[0|1]];
+} result {
+	ln(div(a,b))=sub(ln(a),ln(b))
+}
+
+work Mult(Complex a, Complex b, Complex p) {
+	let 3 log(\e,pow(a,p));
+	substitute Log.Mult[0->1]:1;
+	substitute Log.Mult[0->2]:2;
+	substitute Ln[1->0]:[0|1,0|2,1];
+} result {
+	ln(pow(a,p))=mult(ln(a),p)=mult(p,ln(a))
+}
+
+work ChangeBase(Complex a, Complex b) {
+    let 2 log(a,b);
+    substitute Log.ChangeBase[0->1](-,-,\e):1;
+    substitute Ln[1->0]:1,[0|1];
+} result {
+    log(a,b)=div(ln(b),ln(a))
+}

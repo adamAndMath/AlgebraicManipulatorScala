@@ -1,0 +1,61 @@
+assume Definition(Complex a, Complex n, Complex m)
+    pow(a,add(n,m))=mult(pow(a,n),pow(a,m));
+
+assume Distribute(Complex a, Complex b, Complex n)
+    pow(mult(a,b),n)=mult(pow(a,n),pow(b,n));
+
+assume Identity(Complex a)
+    pow(a,1)=a;
+
+assume Combine(Real a, Complex n, Complex m)//[a>0]
+    pow(pow(a,n),m)=pow(a,mult(n,m));
+
+work Division(Complex a, Complex n, Complex m) {
+    let 2 div(pow(a,n),pow(a,m));
+    substitute Sub.Add1[0->2](-,m):0,0,1;
+    substitute Definition[0->1]:0,0;
+    substitute Div.Mult1[1->0]:0;
+} result {
+    pow(a,sub(n,m))=div(pow(a,n),pow(a,m))
+}
+
+work Singularity(Complex a) {
+    let 2 pow(a,0);
+    substitute Sub.Inverse[1->0](1):1,1;
+    substitute Division[0->1]:1;
+    substitute Div.Inverse[0->1]:1;
+} result {
+    pow(a,0)=1
+}
+
+work Singularity2(Complex a) {
+    let 2 pow(0,a);
+    substitute Sub.Add1[0->2](-,1):1,1;
+    substitute Definition[0->1]:1;
+    substitute Identity[0->1]:1,1;
+    substitute Mult.Singularity[2->0]:1;
+} result {
+    pow(0,a)=0
+}
+
+induction CombineInt(Complex a, Complex n, Integer m) {
+    base m=1 {
+        let 2 pow(a,n);
+        substitute Identity[1->0]:0;
+        substitute Mult.Identity[0->1]:1,1;
+    } m+ {
+        call x mult(x,pow(a,n));
+        substitute Identity[1->0]:0,1;
+        substitute Definition[1->0]:[0|1];
+        substitute Mult.Identity[0->1]:1,1,1;
+        substitute Mult.Distribute[1->0]:1,1;
+    } m- {
+        call x div(x,pow(a,n));
+        substitute Identity[1->0]:0,1;
+        substitute Division[1->0]:[0|1];
+        substitute Mult.Identity[0->1]:1,1,1;
+        substitute Mult.DistributeSub[1->0]:1,1;
+    }
+} result {
+    pow(pow(a,n),m)=pow(a,mult(n,m))
+}

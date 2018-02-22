@@ -1,0 +1,8 @@
+assume Commute(Complex a, Complex b)
+    add(a,b)=add(b,a);
+
+assume Associate(Complex a, Complex b, Complex c)
+    add(add(a,b),c)=add(a,add(b,c));
+
+assume Identity(Complex a)
+    a=add(a,0)=add(0,a);

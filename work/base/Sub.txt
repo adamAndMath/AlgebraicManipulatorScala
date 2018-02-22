@@ -1,0 +1,71 @@
+assume Add1(Complex a, Complex b)
+    a=sub(add(a,b),b)=add(sub(a,b),b);
+
+work Identity(Complex a) {
+    let 2 a;
+    substitute Add1[0->1](-,0):1;
+    substitute Add.Identity[1->0]:1,0;
+} result {
+    a=sub(a,0)
+}
+
+work Inverse(Complex a) {
+    let 2 0;
+    substitute Add1[0->1](-,a):0;
+    substitute Add.Identity[2->0]:0,0;
+} result {
+    sub(a,a)=0
+}
+
+work Add2(Complex a, Complex b) {
+    let 2 sub(a,b);
+    substitute Add.Identity[0->1]:1,0;
+    substitute Add1[0->2](-,b):1,0,1;
+    substitute Add.Associate[1->0]:1,0;
+    substitute Add1[1->0]:1;
+} result {
+    sub(a,b)=add(a,sub(0,b))
+}
+
+work Commute(Complex a, Complex b, Complex c) {
+    let 3 sub(sub(a,b),c);
+    substitute Add2[0->1]:1;
+    substitute Add2[0->1]:1,0;
+    substitute Add.Associate[0->1]:1;
+    substitute Add.Commute[0->1]:1,1;
+    substitute Add.Associate[1->0]:1;
+    substitute Add2[1->0]:1,0;
+    substitute Add2[1->0]:1;
+
+    substitute Add1[0->2](-,add(b,c)):2,0,0;
+    substitute Add.Commute[0->1]:2,0,0,1;
+    substitute Add.Associate[1->0]:2,0,0;
+    substitute Add1[1->0]:2,0;
+    substitute Add1[1->0]:2;
+} result {
+    sub(sub(a,b),c)=sub(sub(a,c),b)=sub(a,add(b,c))
+}
+
+work Commute2(Complex a, Complex b, Complex c) {
+    let 4 sub(add(a,b),c);
+    substitute Add2[0->1]:[1|2|3];
+    substitute Add.Associate[0->1]:[1|2|3];
+    substitute Add.Commute[0->1]:[2,1|3,1];
+    substitute Add.Associate[1->0]:[2|3];
+    substitute Add2[1->0]:[1,1|2,0|3,0];
+
+    substitute Add1[0->2](-,b):3,0,1;
+    substitute Commute[2->0]:3,0;
+    substitute Add1[2->0](-,b):3;
+} result {
+    sub(add(a,b),c)=add(a,sub(b,c))=add(sub(a,c),b)=sub(a,sub(c,b))
+}
+
+work Negate(Complex a) {
+    let 2 a;
+    substitute Add1[0->1](-,0):1;
+    substitute Add.Commute[0->1]:1,0;
+    substitute Commute2[0->3]:1;
+} result {
+    a=sub(0,sub(0,a))
+}
