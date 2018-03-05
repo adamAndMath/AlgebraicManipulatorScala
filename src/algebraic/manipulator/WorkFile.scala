@@ -13,21 +13,26 @@ class WorkFile(val path: List[String]) {
 
       if (size == 1)
         file.get(path.head)
-      else if (size == 2 && using.contains(path.head))
-        project.getFile(using(path.head)).get(path.tail.head)
       else
-        project.getFile(path.take(path.size - 1)).get(path.last)
+        project.getFile(toFull(path).dropRight(1)).get(path.last)
     }
 
     override def toFull(path: List[String]): List[String] = {
-      val size = path.size
+      val size = path.length
 
       if (size == 1)
         file.path ++ path
-      else if (size == 2 && using.contains(path.head))
-        using(path.head) ++ path.tail
-      else
-        path
+      else if (size == 2) {
+        if (using.contains(path.head))
+          using(path.head) ++ path.tail
+        else {
+          val p = file.path.dropRight(1) ++ path.take(1)
+          if (project.containsFile(p))
+            p ++ path.tail
+          else
+            path
+        }
+      } else path
     }
   }
 

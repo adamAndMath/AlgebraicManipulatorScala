@@ -17,22 +17,26 @@ case class Substitute(positions: Tree, path: List[String], from: Int, to: Int, d
 
     val fromExp = identity.result(from)
     val dummy = fromExp.getBound
-    val tree: PathTree[Variable] = fromExp.tree(v => v).filter(!dummy.contains(_))
+    val tree: PathTree[Variable] = fromExp.tree.filter(!dummy.contains(_))
 
-    var pars: Map[Variable, Exp] = (identity.header.parameters.map(_.variable()) zip params).toMap.filter{case (_, p) => p.nonEmpty}.mapValues(_.get)
+    var pars: Map[Variable, Exp] = (identity.header.parameters.map(_.variable) zip params).toMap.filter{case (_, p) => p.nonEmpty}.mapValues(_.get)
 
     if (tree.nonEmpty) {
       try {
-        exp.get(tree).foreach{ case (e, p) =>
+        exp.get(tree).foreach{ case (p, e) =>
           if (!pars.contains(p))
             pars += (p -> e)
-          else if (pars(p) == e)
+          else if (pars(p) != e)
             throw new IllegalStateException(s"Expected parameter ${pars(p)}, but received $e")
         }
       } catch {
-        case _: Exception => throw new IllegalStateException(s"Expected substitute of $fromExp, but received $exp")
+        case e: Exception => throw new IllegalStateException(s"Expected substitute of $fromExp, but received $exp", e)
       }
     }
+
+    for (par <- identity.header.parameters.map(_.variable))
+      if (!pars.contains(par))
+        throw new IllegalStateException(s"Undefined parameter $par ${exp.get(tree)}")
 
     val fromSet = fromExp.setAll((identity.header.dummies zip dummies).toMap, pars)
 

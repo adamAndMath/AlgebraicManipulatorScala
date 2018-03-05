@@ -23,10 +23,32 @@ class Assumption(header: Header, result: List[Exp]) extends Identity(header, res
 }
 
 class Proof(header: Header, result: List[Exp], val count: Int, val origin: Exp) extends Identity(header, result) {
-  private var current: List[Exp] = List.fill(count)(origin)
+  private var cur: List[Exp] = List.fill(count)(origin)
   private var manips: List[Manipulation] = List.empty
 
-  def manipulations: List[Manipulation] = manips
+  def manipulations: List[Manipulation] = manips.reverse
+  def current: List[Exp] = cur
+
+  override def validate(): Boolean = (cur zip result).forall(p => p._1 == p._2)
+
+  override def dependencies(finder: Project.Finder): Set[List[String]] = manips.map(_.dependencies(finder)).fold(Set.empty)(_ ++ _)
+
+  def apply(finder: Project.Finder, manipulation: Manipulation): Unit = {
+    cur = manipulation(finder, cur)
+    manips ::= manipulation
+  }
+
+  def remove(finder: Project.Finder): Unit = {
+    manips = manips.tail
+    cur = (manips :\ List.fill(count)(origin))(_(finder, _))
+  }
+}
+
+class AssumedProof(header: Header, result: List[Exp], val origin: List[Exp]) extends Identity(header, result) {
+  private var current: List[Exp] = origin
+  private var manips: List[Manipulation] = List.empty
+
+  def manipulations: List[Manipulation] = manips.reverse
 
   override def validate(): Boolean = (current zip result).forall(p => p._1 == p._2)
 
@@ -39,26 +61,7 @@ class Proof(header: Header, result: List[Exp], val count: Int, val origin: Exp) 
 
   def remove(finder: Project.Finder): Unit = {
     manips = manips.tail
-    current = (manips :\ List.fill(count)(origin))(_(finder, _))
-  }
-}
-
-class AssumedProof(header: Header, result: List[Exp], val origin: List[Exp]) extends Identity(header, result) {
-  private var current: List[Exp] = origin
-  private var manipulations: List[Manipulation] = List.empty
-
-  override def validate(): Boolean = (current zip result).forall(p => p._1 == p._2)
-
-  override def dependencies(finder: Project.Finder): Set[List[String]] = manipulations.map(_.dependencies(finder)).fold(Set.empty)(_ ++ _)
-
-  def apply(finder: Project.Finder, manipulation: Manipulation): Unit = {
-    current = manipulation(finder, current)
-    manipulations ::= manipulation
-  }
-
-  def remove(finder: Project.Finder): Unit = {
-    manipulations = manipulations.tail
-    current = (manipulations :\ origin)(_(finder, _))
+    current = (manips :\ origin)(_(finder, _))
   }
 }
 

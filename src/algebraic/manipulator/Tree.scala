@@ -1,8 +1,10 @@
 package algebraic.manipulator
 
-sealed abstract class Tree {
+sealed trait Tree {
   def |(other: Tree): Tree
+
   def :>[T](leaf: T): PathTree[T]
+
   def ::(other: Tree): Tree = other match {
     case Tree.Leaf => this
     case Tree.Node(c) => Tree.Node(c map {case (k,v) => (k,v::this)})
@@ -13,7 +15,7 @@ object Tree {
   val empty: Tree = Leaf
 
   def from(l: Traversable[Int]): Tree = (l :\ empty)((v, t) => Node(Map(v->t)))
-  def edge(v: Int): Tree = Node(Map(v -> Leaf))
+  def edge(edges: Int*): Tree = (edges :\ empty)((e, next) => Node(Map(e -> next)))
 
   case object Leaf extends Tree {
     override def |(other: Tree): Tree = other match {

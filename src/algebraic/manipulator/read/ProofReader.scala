@@ -25,17 +25,17 @@ object ProofReader {
   def readTree(tokens: Tokens): Read[Tree] =
     {
       if (tokens is OPEN_BRAC) readTreeBrac(tokens)
-      else tokens.int().map(Tree.edge)
+      else tokens.int().map(Tree.edge(_))
     }.and(_.when(COMMA, readTree))
     .map{case (a, b) => b.map(a :: _).getOrElse(a)}
 
   def readTreeBrac(tokens: Tokens): Read[Tree] =
     tokens.readList(BAR, BRACKETS, readTree).map(c => (c.head /: c.tail)(_|_))
 
-  def readExp(tokens: Tokens): Read[Exp] = tokens match {
-    case Token(_,_, INT(_), _) => readInt(tokens).map(c=>c)
-    case Token(_,_, BACKSLASH, _) => readConstant(tokens).map(c=>c)
-    case Token(_,_, STRING(_), _) =>
+  def readExp(tokens: Tokens): Read[Exp] = tokens.token match {
+    case INT(_) => readInt(tokens).map(c=>c)
+    case BACKSLASH => readConstant(tokens).map(c=>c)
+    case STRING(_) =>
       if (tokens.tail.is(OPEN_PAR) || tokens.tail.is(LESS))
         readOperation(tokens).map(c=>c)
       else
@@ -65,7 +65,7 @@ object ProofReader {
 
   def readManipulation(tokens: Tokens): Read[Manipulation] = {
     val read = tokens.string()
-    manipulationReaders.getOrElse(read.read, throw new IllegalArgumentException)(read.tokens)
+    manipulationReaders.getOrElse(read.read, throw new IllegalArgumentException)(read.tokens).ignore(SEMI)
   }
 
   def readCall(tokens: Tokens): Read[Call] =
@@ -108,28 +108,40 @@ object ProofReader {
 
   def readProof(tokens: Tokens): Read[ProofTemplate] =
     readHeader(tokens)
-      .and(_.expect(BLOCK, _.expect("let").int().and(readExp).ignore(SEMI).and(_.whileNot(CLOSE_BLOCK, readManipulation(_).ignore(SEMI)))))
+      .and(_.expect(BLOCK, _.expect("let").int().and(readExp).ignore(SEMI).and(_.whileNot(CLOSE_BLOCK, readManipulation))))
       .and(_.expect(STRING("result")).ignore(BLOCK, _.readList(EQUAL, readExp)))
       .map{ case ((head, ((count, origin), ms)), result) => ProofTemplate(head, result, count, origin, ms)}
 
-  def readInduction(tokens: Tokens): Read[InductionProofTemplate] = ???
+  def readInduction(tokens: Tokens): Read[InductionProofTemplate] =
+    readHeader(tokens)
+      .and(_.expect(BLOCK,
+        _.expect("base").readList(COMMA, readVariable(_).expect(EQUAL).and(readExp)).and(_.expect(BLOCK, _.expect("let").int().and(readExp).ignore(SEMI).and(_.whileNot(CLOSE_BLOCK, readManipulation))))
+          .and(
+            _.whileNot(CLOSE_BLOCK, readVariable(_).and(t => Read[Boolean](t.token match {case PLUS => true; case DASH => false}, t.tail)).and(_.expect(BLOCK, _.whileNot(CLOSE_BLOCK, readManipulation))))
+              .map(is => (is :\ (Map.empty[Variable, List[Manipulation]], Map.empty[Variable, List[Manipulation]]))((i, o) => if (i._1._2) (o._1 + (i._1._1 -> i._2), o._2) else (o._1, o._2 + (i._1._1 -> i._2))))
+          )
+      )).expect("result").and(_.ignore(BLOCK, _.readList(EQUAL, readExp)))
+      .map{case ((header, ((base, ((count, origin), baseManip)), (up, down))), result) => InductionProofTemplate(header, result, base.toMap, count, origin, baseManip, up, down)}
 
   def readFile(path: List[String], tokens: Tokens): FileTemplate =
     tokens.whileMatch(STRING("using"), _.readList(COMMA, _.string()).ignore(SEMI))
       .and(_.whileNot(EOF, readIdentity))
       .map{case (using, ides) => FileTemplate(path, using.map(p => p.last -> p).toMap, ides)}.read
 
-  def readFile(projectPath: Path, path: List[String]): FileTemplate =
+  def readFile(projectPath: Path, path: List[String]): FileTemplate = {
+    val iPath = path.dropRight(1) ++ List(path.last.substring(0, path.last.lastIndexOf('.')))
+
     try {
-      readFile(path, Tokens(Source.fromFile((projectPath /: path) (_.resolve(_)).toFile).toList))
+      readFile(iPath, Tokens(Source.fromFile((projectPath /: path) (_.resolve(_)).toFile).toList))
     } catch {
-      case e: Exception => throw new IllegalStateException(s"Exception occurred while reading ${path.mkString(".")}", e)
+      case e: Exception => throw new IllegalStateException(s"Exception occurred while reading ${iPath.mkString(".")}", e)
     }
+  }
 
   def readProject(path: Path): ProjectTemplate = {
     def rec(f: File, list: List[String]): ProjectTemplate = {
       if (f.isDirectory)
-        ProjectTemplate.Folder(f.listFiles().map(f => f.getName -> rec(f, f.getName :: list)).toMap)
+        ProjectTemplate.Folder(f.listFiles().map(f => (if (f.isFile) f.getName.substring(0, f.getName.lastIndexOf('.')) else f.getName) -> rec(f, f.getName :: list)).toMap)
       else
         ProjectTemplate.File(readFile(path, list.reverse))
     }

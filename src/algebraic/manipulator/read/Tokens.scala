@@ -9,7 +9,7 @@ object Tokens {
     @tailrec
     def go(prev: Tokens, pos: Int, line: Int, code: List[Char]): Tokens = {
       if (code.isEmpty)
-        EndToken
+        prev
       else code.head match {
         case ' ' => go(prev, pos + 1, line, code.tail)
         case '\t' => go(prev, pos + 1, line, code.tail)
@@ -28,9 +28,15 @@ object Tokens {
         case ',' => go(Token(pos, line, COMMA, prev), pos + 1, line, code.tail)
         case ':' => go(Token(pos, line, COLON, prev), pos + 1, line, code.tail)
         case ';' => go(Token(pos, line, SEMI, prev), pos + 1, line, code.tail)
-        case '/' => go(Token(pos, line, SLASH, prev), pos + 1, line, code.tail)
+        case '/' =>
+          if (code.tail.head == '/') {
+            val skip = code.takeWhile(_ != '\n').length
+            go(prev, pos + skip, line, code.drop(skip))
+          } else
+            go(Token(pos, line, SLASH, prev), pos + 1, line, code.tail)
         case '\\' => go(Token(pos, line, BACKSLASH, prev), pos + 1, line, code.tail)
         case '=' => go(Token(pos, line, EQUAL, prev), pos + 1, line, code.tail)
+        case '+' => go(Token(pos, line, PLUS, prev), pos + 1, line, code.tail)
         case '-' =>
           if (code.tail.head == '>')
             go(Token(pos, line, ARROW, prev), pos + 2, line, code.tail.tail)
@@ -47,7 +53,7 @@ object Tokens {
           } else {
             prev match {
               case Token(p, l, STRING(s), pre) if p + s.length == pos && l == line =>
-                go(Token(pos, line, STRING(c + s), pre), pos + 1, line, code.tail)
+                go(Token(p, l, STRING(s + c), pre), pos + 1, line, code.tail)
               case _ => go(Token(pos, line, STRING(c.toString), prev), pos + 1, line, code.tail)
             }
           }
@@ -60,7 +66,8 @@ object Tokens {
       case EndToken => l
     }
 
-    (list(go(EndToken, 1, 1, code), List.empty) :\ (EndToken:Tokens))((p, next) => Token(p._1, p._2, p._3, next))
+    val l = list(go(EndToken, 1, 1, code), List.empty)
+    (l :\ (EndToken:Tokens))((p, next) => Token(p._1, p._2, p._3, next))
   }
 
   case class Read[T](read: T, tokens: Tokens) {
@@ -160,6 +167,7 @@ object Tokens {
   case object SLASH extends ProofToken
   case object BACKSLASH extends ProofToken
   case object EQUAL extends ProofToken
+  case object PLUS extends ProofToken
   case object DASH extends ProofToken
   case object ARROW extends ProofToken
   case class STRING(str: String) extends ProofToken

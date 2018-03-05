@@ -9,18 +9,19 @@ sealed abstract class Exp {
     case Tree.Node(_) => throw new IllegalArgumentException
   }
 
-  def get[T](tree: PathTree[T]): TraversableOnce[(Exp, T)] = tree match {
-    case PathTree.Leaf(l) => List((this, l))
+  def get[T](tree: PathTree[T]): TraversableOnce[(T, Exp)] = tree match {
+    case PathTree.Empty() => List.empty
+    case PathTree.Leaf(l) => List(l -> this)
     case PathTree.Node(_) => throw new IllegalArgumentException
   }
 
   def set(map: Variable=>Exp): Exp = this
   def setAll(dum: Map[Variable, Variable], map: Variable => Exp): Exp = this
-  def tree[T](toLeaf: Variable=>T):PathTree[T] = PathTree.empty
+  def tree:PathTree[Variable] = PathTree.empty
 
   def replace(tree: Tree, func: Exp=>Exp): Exp = tree match {
     case Tree.Leaf => func(this)
-    case Tree.Node(_) => throw new IllegalArgumentException
+    case Tree.Node(_) => throw new IllegalArgumentException(s"Illegal path")
   }
 
   def replace[T](tree: PathTree[T], func: (Exp, T)=>Exp): Exp = tree match {
@@ -43,9 +44,9 @@ case class Variable(name: String) extends Exp {
   override def getFree: Set[Variable] = Set(this)
 
   override def set(map: Variable => Exp): Exp = map(this)
-  override def setAll(dum: Map[Variable, Variable], map: Variable => Exp): Exp = dum.applyOrElse(this, map)
+  override def setAll(dum: Map[Variable, Variable], map: Variable => Exp): Exp = dum.getOrElse(this, map(this))
 
-  override def tree[T](toLeaf: Variable => T): PathTree[T] = PathTree.Leaf(toLeaf(this))
+  override def tree: PathTree[Variable] = PathTree.Leaf(this)
 }
 
 case class Operation(name: String, dummies: List[Variable], parameters: List[Exp]) extends Exp {
@@ -60,8 +61,8 @@ case class Operation(name: String, dummies: List[Variable], parameters: List[Exp
         c.flatMap{case (k,v) => parameters(k).get(v)}
   }
 
-  override def get[T](tree: PathTree[T]): TraversableOnce[(Exp, T)] = tree match {
-    case PathTree.Leaf(l) => List((this, l))
+  override def get[T](tree: PathTree[T]): TraversableOnce[(T, Exp)] = tree match {
+    case PathTree.Leaf(l) => List(l -> this)
     case n @ PathTree.Node(c) =>
       if (n.min < 0 || n.max > parameters.size)
         throw new IllegalArgumentException
@@ -73,8 +74,8 @@ case class Operation(name: String, dummies: List[Variable], parameters: List[Exp
   override def setAll(dum: Map[Variable, Variable], map: Variable => Exp): Exp =
     Operation(name, dummies.map(v => dum.getOrElse(v, v)), parameters.map(_.setAll(dum, map)))
 
-  override def tree[T](toLeaf: Variable => T): PathTree[T] = {
-    val children = (parameters.indices zip parameters.map(_.tree(toLeaf))).toMap.filter { case (_, o) => o.nonEmpty }
+  override def tree: PathTree[Variable] = {
+    val children = (parameters.indices zip parameters.map(_.tree)).toMap.filter { case (_, o) => o.nonEmpty }
 
     if (children.isEmpty) PathTree.empty
     else PathTree.Node(children)

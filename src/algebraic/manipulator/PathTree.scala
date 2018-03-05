@@ -3,7 +3,7 @@ package algebraic.manipulator
 sealed abstract class PathTree[T] {
   val isLeaf: Boolean = false
   val isEmpty: Boolean = false
-  val nonEmpty: Boolean = !isEmpty
+  def nonEmpty: Boolean = !isEmpty
   def apply(i: Int): PathTree[T] = PathTree.empty
   def ::(other: Tree): PathTree[T] = other match {
     case Tree.Leaf => this
@@ -13,7 +13,7 @@ sealed abstract class PathTree[T] {
   def |(other: PathTree[T]): PathTree[T]
 
   def filter(predicate: T => Boolean): PathTree[T]
-  def map[U](map: Map[T, U]): PathTree[U]
+  def map[U](map: T => U): PathTree[U]
 }
 
 object PathTree {
@@ -25,7 +25,7 @@ object PathTree {
     override def ::(other: Tree): PathTree[T] = this
     override def |(other: PathTree[T]): PathTree[T] = other
     override def filter(predicate: T => Boolean): PathTree[T] = this
-    override def map[U](map: Map[T, U]): PathTree[U] = Empty()
+    override def map[U](map: T => U): PathTree[U] = Empty()
   }
 
   case class Leaf[T](leaf: T) extends PathTree[T] {
@@ -38,7 +38,7 @@ object PathTree {
 
     override def filter(predicate: T => Boolean): PathTree[T] = if (predicate(leaf)) this else Empty()
 
-    override def map[U](map: Map[T, U]): PathTree[U] = Leaf(map(leaf))
+    override def map[U](map: T => U): PathTree[U] = Leaf(map(leaf))
 
     override def toString: String = s"($leaf)"
   }
@@ -65,7 +65,7 @@ object PathTree {
       if (c.isEmpty) Empty() else Node(c)
     }
 
-    override def map[U](map: Map[T, U]): PathTree[U] = Node(children.mapValues(_.map(map)))
+    override def map[U](map: T => U): PathTree[U] = Node(children.mapValues(_.map(map)))
 
     def min(): Int = children.keys.min
     def max(): Int = children.keys.max

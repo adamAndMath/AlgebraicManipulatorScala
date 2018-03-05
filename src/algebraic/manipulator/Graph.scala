@@ -4,7 +4,7 @@ object Graph {
   def topologicalSort[K, T](map: Map[K, T], edges: (K, T) => Set[K]): List[(K, T)] = {
     class Node(val prod: (K, T), var edges: Set[Node] = Set.empty, var invEdges: Set[Node] = Set.empty)
 
-    val lookup = (Map.empty[K, Node] /: map)((lookup, p) => lookup + (p._1 -> new Node(p)))
+    val lookup = map.map{case (k, t) => k -> new Node(k -> t)}
 
     for (n <- lookup.values) {
       n.edges = edges(n.prod._1, n.prod._2).map(lookup)

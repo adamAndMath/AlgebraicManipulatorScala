@@ -19,7 +19,7 @@ case class AssumptionTemplate(header: Header, result: List[Exp]) extends Identit
 case class ProofTemplate(header: Header, result: List[Exp], count: Int, origin: Exp, manipulations: List[Manipulation]) extends IdentityTemplate {
   override def apply(finder: Finder): Proof = {
     val proof = new Proof(header, result, count, origin)
-    manipulations.foreach(proof(finder, _))
+    (manipulations.indices zip manipulations).foreach{case (i, m) => try {proof(finder, m)} catch { case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation $i: $m for ${proof.current.mkString("=")}", e)}}
     proof
   }
 
