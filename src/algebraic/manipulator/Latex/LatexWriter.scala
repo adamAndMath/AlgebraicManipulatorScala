@@ -81,7 +81,7 @@ object LatexWriter {
 
       res
     case p: InductionProof => "Proof by induction\n" +
-      s"\\subsection{${p.inductives.toList.map{case (v, exp) => s"$v = ${writeExp(exp)}"}.mkString(",")}}\n" +
+      s"\\subsection{$$${p.inductives.toList.map{case (v, exp) => s"$v = ${writeExp(exp)}"}.mkString(",")}$$}\n" +
       p.inductives.keySet.map(v => s"\\subsection{$v'=$v+1}\n${writeIdentity(finder, p.up(v))}\n\\subsection{$v'=$v-1}\n${writeIdentity(finder, p.down(v))}")
     case p: AssumedProof =>
       var exps = p.origin
@@ -144,7 +144,8 @@ object LatexWriter {
 
   def writeIdentityReference(path: List[String], header: Header, exps: List[Exp]): String = {
     val parameters = header.parameters.map(_.variable)
-    s"\\hyperref[${path.mkString(":")}]{$$${writeDefinition(header, v => Some(colors(parameters.indexOf(v))))}: ${exps.map(e => writeExp(e, e.tree.map(v => colors(parameters.indexOf(v))))).mkString("=")}$$}"
+    val equation = exps.map(e => writeExp(e, e.tree.filter(parameters.contains).map(v => colors(parameters.indexOf(v)))))
+    s"\\hyperref[${path.mkString(":")}]{$$${writeDefinition(header, v => Some(colors(parameters.indexOf(v))))}: ${equation.mkString("=")}$$}"
   }
 
   def writeDefinition(header: Header, colors: Variable => Option[String] = _ => None): String = header.parameters match {
@@ -160,7 +161,7 @@ object LatexWriter {
   def writeType(t: Type): String = t match {
     case SimpleType(n) => typeNames.getOrElse(n, n)
     case FuncType(from, to) => s"\\left(${writeType(from)} \\rightarrow ${writeType(to)}\\right)"
-    case TupleType(ts) => s"\\left(${ts.map(writeType).mkString(",")}"
+    case TupleType(ts) => s"\\left(${ts.map(writeType).mkString(",")}\\right)"
   }
 
   def writeExp(exp: Exp, textColor: PathTree[String] = PathTree.empty, backColor: PathTree[String] = PathTree.empty, binding: Int = 0): String = {

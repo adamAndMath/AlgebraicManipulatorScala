@@ -32,6 +32,9 @@ object Tokens {
           if (code.tail.head == '/') {
             val skip = code.takeWhile(_ != '\n').length
             go(prev, pos + skip, line, code.drop(skip))
+          } else if (code.tail.head == '*') {
+            val (p, l, c) = comment(pos+2, line, code.drop(2))
+            go(prev, p, l, c)
           } else
             go(Token(pos, line, SLASH, prev), pos + 1, line, code.tail)
         case '\\' => go(Token(pos, line, BACKSLASH, prev), pos + 1, line, code.tail)
@@ -58,6 +61,13 @@ object Tokens {
             }
           }
       }
+    }
+
+    def comment(pos: Int, line: Int, code: List[Char]): (Int, Int, List[Char]) = code match {
+      case '*' :: '/' :: tail => (pos + 2, line, tail)
+      case '\n' :: tail => comment(1, line + 1, tail)
+      case Nil => throw new TokenException(EndToken, "Un ended comment")
+      case _ :: tail => comment(pos + 1, line, tail)
     }
 
     @tailrec

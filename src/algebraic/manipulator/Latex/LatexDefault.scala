@@ -8,15 +8,15 @@ object LatexDefault {
     LatexWriter.operationWriters += "add" -> getBiWriter(" + ", 1)
     LatexWriter.operationWriters += "sub" -> getBiWriter(" - ", 1)
     LatexWriter.operationWriters += "mult" -> getBiWriter(" \\cdot ", 2)
-    LatexWriter.operationWriters += "div" -> (div(_, _, _, _))
-    LatexWriter.operationWriters += "pow" -> (pow(_, _, _, _))
-    LatexWriter.operationWriters += "rec" -> (rec(_, _, _, _))
-    LatexWriter.operationWriters += "sum" -> (sum(_, _, _, _))
-    LatexWriter.operationWriters += "prod" -> (prod(_, _, _, _))
-    LatexWriter.operationWriters += "eval" -> (eval(_, _, _, _))
-    LatexWriter.operationWriters += "func" -> (func(_, _, _, _))
-    LatexWriter.operationWriters += "lim" -> (lim(_, _, _, _))
-    LatexWriter.operationWriters += "diff" -> (diff(_, _, _, _))
+    LatexWriter.operationWriters += (("div", div))
+    LatexWriter.operationWriters += (("pow", pow))
+    LatexWriter.operationWriters += (("rec", rec))
+    LatexWriter.operationWriters += (("sum", sum))
+    LatexWriter.operationWriters += (("prod", prod))
+    LatexWriter.operationWriters += (("eval", eval))
+    LatexWriter.operationWriters += (("func", func))
+    LatexWriter.operationWriters += (("lim", lim))
+    LatexWriter.operationWriters += (("diff", diff))
 
     LatexWriter.typeNames += "Natural" -> "\\mathbb{N}"
     LatexWriter.typeNames += "Integer" -> "\\mathbb{Z}"
@@ -70,9 +70,9 @@ object LatexDefault {
 
   def eval(op: Operation, textColor: PathTree[String], backColor: PathTree[String], binding: Int): String = op match {
     case Operation(_, Nil, (v: Variable) :: tail) =>
-      s"${writeExp(v, textColor(0), backColor(0))}\\left(${(tail.indices zip tail).map{case (i,e) => writeExp(e, textColor(i+1), backColor(i+1))}}\\right)"
+      s"${writeExp(v, textColor(0), backColor(0))}\\left(${(tail.indices zip tail).map{case (i,e) => writeExp(e, textColor(i+1), backColor(i+1))}.mkString(", ")}\\right)"
     case Operation(_, Nil, f :: tail) =>
-      s"${writeExp(f, textColor(0), backColor(0), Int.MaxValue)}\\circ\\left(${(tail.indices zip tail).map{case (i,e) => writeExp(e, textColor(i+1), backColor(i+1))}}\\right)"
+      s"${writeExp(f, textColor(0), backColor(0), Int.MaxValue)}\\circ\\left(${(tail.indices zip tail).map{case (i,e) => writeExp(e, textColor(i+1), backColor(i+1))}.mkString(", ")}\\right)"
     case _ => defaultWriter(op, textColor, backColor, binding)
   }
 
@@ -80,8 +80,8 @@ object LatexDefault {
     s"\\underset{${op.dummies.map(writeExp(_)).mkString(",")}}{func}\\left(${(op.parameters.indices zip op.parameters).map{case (i, e) => writeExp(e, textColor(i), backColor(i))}.mkString(",")}\\right)"
 
   def lim(op: Operation, textColor: PathTree[String], backColor: PathTree[String], binding: Int): String = op match {
-    case Operation(_, ds, f :: vs) if ds.length == vs.length =>
-      s"\\displaystyle\\lim_{\\left${ds.map(writeExp(_)).mkString(",")}\\right)\\to\\left(${(vs.indices zip vs).map{case (i, e) => writeExp(e, textColor(i+1), backColor(i+1))}.mkString(",")}\\right)}${writeExp(f, textColor(0), backColor(0), Int.MaxValue)}"
+    case Operation(_, List(d), List(v, f)) =>
+      s"\\displaystyle\\lim_{${writeExp(d)} \\to ${writeExp(v, textColor(0), backColor(0))}}${writeExp(f, textColor(1), backColor(1), Int.MaxValue)}"
     case _ => defaultWriter(op, textColor, backColor, binding)
   }
 

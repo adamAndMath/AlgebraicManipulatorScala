@@ -30,7 +30,7 @@ object ProofReader {
     .map{case (a, b) => b.map(a :: _).getOrElse(a)}
 
   def readTreeBrac(tokens: Tokens): Read[Tree] =
-    tokens.readList(BAR, BRACKETS, readTree).map(c => (c.head /: c.tail)(_|_))
+    tokens.readList(BAR, BRACKETS, readTree).map(c => if (c.isEmpty) Tree.empty else (c.head /: c.tail)(_|_))
 
   def readExp(tokens: Tokens): Read[Exp] = tokens.token match {
     case INT(_) => readInt(tokens).map(c=>c)
@@ -90,7 +90,7 @@ object ProofReader {
       readVariable(_).and(_.when(EQUAL, readExp)).and(_.when(COLON, readTreeBrac)).map{case ((n, v), p) => ToEval.Parameter(n, v, p)}
     ).expect(COLON).and(readTree).map{case (par, pos) => ToEval(pos, par)}
 
-  def readFromEval(tokens: Tokens): Read[FromEval] = readTree(tokens).map(FromEval)
+  def readFromEval(tokens: Tokens): Read[FromEval] = readTree(tokens.expect(COLON)).map(FromEval)
 
   def readHeader(tokens: Tokens): Read[Header] =
     tokens.whenBlock(LESSGREAT, _.readList(COMMA, readVariable))
@@ -124,7 +124,7 @@ object ProofReader {
       .map{case ((header, ((base, ((count, origin), baseManip)), (up, down))), result) => InductionProofTemplate(header, result, base.toMap, count, origin, baseManip, up, down)}
 
   def readFile(path: List[String], tokens: Tokens): FileTemplate =
-    tokens.whileMatch(STRING("using"), _.readList(COMMA, _.string()).ignore(SEMI))
+    tokens.whileMatch(STRING("using"), _.readList(DOT, _.string()).ignore(SEMI))
       .and(_.whileNot(EOF, readIdentity))
       .map{case (using, ides) => FileTemplate(path, using.map(p => p.last -> p).toMap, ides)}.read
 

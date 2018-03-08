@@ -42,7 +42,7 @@ work DistributeSub(Complex a, Complex b) {
 	ln(div(a,b))=sub(ln(a),ln(b))
 }
 
-work Mult(Complex a, Complex b, Complex p) {
+work Mult(Complex a, Complex p) {
 	let 3 log(\e,pow(a,p));
 	substitute Log.Mult[0->1]:1;
 	substitute Log.Mult[0->2]:2;

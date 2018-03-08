@@ -21,12 +21,13 @@ sealed abstract class Exp {
 
   def replace(tree: Tree, func: Exp=>Exp): Exp = tree match {
     case Tree.Leaf => func(this)
-    case Tree.Node(_) => throw new IllegalArgumentException(s"Illegal path")
+    case Tree.Node(_) => throw new IllegalArgumentException("Illegal path")
   }
 
   def replace[T](tree: PathTree[T], func: (Exp, T)=>Exp): Exp = tree match {
+    case PathTree.Empty() => this
     case PathTree.Leaf(a) => func(this, a)
-    case PathTree.Node(_) => throw new IllegalArgumentException
+    case PathTree.Node(_) => throw new IllegalArgumentException("Illegal path")
   }
 }
 
@@ -91,11 +92,12 @@ case class Operation(name: String, dummies: List[Variable], parameters: List[Exp
   }
 
   override def replace[T](tree: PathTree[T], func: (Exp, T) => Exp): Exp = tree match {
+    case PathTree.Empty() => this
     case PathTree.Leaf(a) => func(this, a)
-    case n @ PathTree.Node(c) =>
+    case n @ PathTree.Node(_) =>
       if (n.min < 0 || n.max > parameters.size)
         throw new IllegalArgumentException
       else
-        Operation(name, dummies, (parameters.indices zip parameters).map{case (i,e) => if (c.contains(i)) e.replace(c(i), func) else e}.toList)
+        Operation(name, dummies, (parameters.indices zip parameters).map{case (i,e) => e.replace(n(i), func)}.toList)
   }
 }

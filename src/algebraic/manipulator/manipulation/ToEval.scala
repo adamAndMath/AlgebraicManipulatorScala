@@ -19,7 +19,7 @@ case class ToEval(positions: Tree, parameters: List[ToEval.Parameter]) extends P
       e
     }).toMap
 
-    val valTree: PathTree[Exp] = (PathTree.empty[Exp] /: parameters.filter(_.positions.nonEmpty).map(p => p.positions.get :> pars(p.variable)))((a, b) => a|b)
-    Operation("eval", List.empty, Operation("func", parameters.map(_.variable), List(exp.replace[Exp](valTree, (_, e) => e))) :: parameters.map(p => pars(p.variable)))
+    val valTree = (PathTree.empty[Variable] /: parameters.filter(_.positions.nonEmpty).map(p => p.positions.get :> p.variable))((a, b) => a|b)
+    Operation("eval", List.empty, Operation("func", parameters.map(_.variable), List(exp.replace[Variable](valTree, (_, e) => e))) :: parameters.map(p => pars(p.variable)))
   }
 }
