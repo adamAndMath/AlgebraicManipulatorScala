@@ -1,4 +1,4 @@
-package algebraic.manipulator.Latex
+package algebraic.manipulator.latex
 
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -6,6 +6,7 @@ import java.util.Locale
 
 import algebraic.manipulator._
 import algebraic.manipulator.manipulation._
+import algebraic.manipulator.structure._
 
 object LatexWriter {
   var operationWriters = Map.empty[String, (Operation, PathTree[String], PathTree[String], Int) => String]
@@ -13,10 +14,10 @@ object LatexWriter {
   var colors = List("red", "blue", "olive", "orange", "yellow")
 
   def apply(project: Project, title: String, author: String): String = {
-    def getFiles(sub: Project, list: List[String]): List[WorkFile] = sub match {
+    def getFiles(sub: Project, path: Path): List[WorkFile] = sub match {
       case f: Project.Folder =>
-        Graph.topologicalSort[String, Project](f.map, (k, p) => p.dependencies(project, k :: list).filter(_.tail == list).map(_.head))
-          .flatMap{case (k, p) => getFiles(p, k :: list)}
+        Graph.topologicalSort[String, Project](f.map, (k, p) => p.dependencies(project, path + k).filter(_.parent == path).map(_.last))
+          .flatMap{case (k, p) => getFiles(p, path + k)}
       case Project.File(file) => List(file)
     }
 
@@ -33,7 +34,7 @@ object LatexWriter {
       "\\begin{document}\n\n" +
       "\\maketitle\n" +
       "\\tableofcontents\n\n" +
-      getFiles(project, List.empty).map(writeFile(project, _)).mkString("\n") +
+      getFiles(project, Path.empty).map(writeFile(project, _)).mkString("\n") +
       "\n\\end{document}"
   }
 
@@ -41,24 +42,38 @@ object LatexWriter {
     val finder = file.find(project)
 
     s"\\chapter{${file.path.last}}\n" +
+      file.names.filter(file.get(_).isInstanceOf[InductiveStructure]).map(name =>
+        writeInductiveStructure(name, file.get(name).asInstanceOf[InductiveStructure])
+      ).mkString +
       "Given the following assumptions:\n" +
-      file.names.filter(file.get(_).isInstanceOf[Assumption]).map(name => {
+      file.names.filter(file.get(_).isInstanceOf[Assumption]).map(name =>
         "\\\\\n" +
-          s"\\label{${(file.path ++ List(name)).mkString(":")}}\n" +
-          writeAssumption(file.get(name).asInstanceOf[Assumption]) +
-          "\n"
-      }).mkString +
-      file.names.filter(!file.get(_).isInstanceOf[Assumption]).map(name => {
+          s"\\label{${(file.path + name).mkString(":")}}\n" +
+          writeAssumption(file.get(name).asInstanceOf[Assumption])
+      ).mkString +
+      file.names
+        .filterNot(file.get(_).isInstanceOf[Assumption])
+        .filterNot(file.get(_).isInstanceOf[InductiveStructure])
+        .filterNot(file.get(_) == SimpleStructure)
+        .map(name => {
         s"\\section{$name}\n" +
-          s"\\label{${(file.path ++ List(name)).mkString(":")}}\n" +
-          writeIdentity(finder, file.get(name))
+          s"\\label{${(file.path + name).mkString(":")}}\n" +
+          writeElement(finder, file.get(name))
       }).mkString
+  }
+
+  def writeInductiveStructure(name: String, structure: InductiveStructure): String = {
+    val typeOut = writeType(SimpleType(name))
+    s"Let $$$typeOut$$ be the smallest set that satisfies " +
+      s"$$${writeDefinition(Header(Nil, structure.base.params))}: ${writeExp(structure.base.exp)} \\in $typeOut$$" +
+      structure.steps.map(step => s" and $$${writeDefinition(Header(Nil, Definition(SimpleType(name), step.v.name) :: step.params))}: ${writeExp(step.exp)} \\in $typeOut$$").mkString +
+    "\\\\\n"
   }
 
   def writeAssumption(assumption: Assumption): String =
     s"$$${writeDefinition(assumption.header)}: ${assumption.result.map(writeExp(_)).mkString("=")}$$"
 
-  def writeIdentity(finder: Project.Finder, identity: Identity): String = identity match {
+  def writeElement(finder: Project.Finder, element: Element): String = element match {
     case p: Proof =>
       var exps = List.fill(p.count)(p.origin)
       var res = ""
@@ -81,8 +96,8 @@ object LatexWriter {
 
       res
     case p: InductionProof => "Proof by induction\n" +
-      s"\\subsection{$$${p.inductives.toList.map{case (v, exp) => s"$v = ${writeExp(exp)}"}.mkString(",")}$$}\n" +
-      p.inductives.keySet.map(v => s"\\subsection{$v'=$v+1}\n${writeIdentity(finder, p.up(v))}\n\\subsection{$v'=$v-1}\n${writeIdentity(finder, p.down(v))}")
+      s"\\subsection{$$${p.inductives.toList.map{case (v, exp) => s"$v = ${writeExp(exp)}"}.mkString(",")}$$}\n${writeElement(finder, p.base)}\n" +
+      p.inductives.keySet.map(v => p(v).map(i => s"\\subsection{$v'=$$${writeExp(i.exp)}$$}\n${writeElement(finder, i.proof)}").mkString("\n")).mkString("\n")
     case p: AssumedProof =>
       var exps = p.origin
       var res = ""
@@ -109,7 +124,7 @@ object LatexWriter {
   def getInputColors(finder: Project.Finder, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, from, _, _, _) =>
-      val identity = finder(path)
+      val identity = finder(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(from).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
     case ToEval(positions, parameters) =>
@@ -121,7 +136,7 @@ object LatexWriter {
   def getOutputColors(finder: Project.Finder, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, _, to, _, _) =>
-      val identity = finder(path)
+      val identity = finder(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(to).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
     case ToEval(positions, parameters) =>
@@ -135,14 +150,14 @@ object LatexWriter {
   def writeManipulation(finder: Project.Finder, manipulation: Manipulation): String = manipulation match {
     case Call(temp, exp) => s"Call $$${writeExp(exp, exp.tree.filter(_ == temp).map(_ => colors.head))}$$"
     case Substitute(_, path, from, to, _, _) =>
-      val identity = finder(path)
+      val identity = finder(path).asInstanceOf[Identity]
       writeIdentityReference(finder.toFull(path), identity.header, List(from, to).map(identity.result))
     case ToEval(_, _) => "Convert to function call"
     case FromEval(_) => "Convert from function call"
     case Rename(_, from, to) => s"Renaming $from to $to"
   }
 
-  def writeIdentityReference(path: List[String], header: Header, exps: List[Exp]): String = {
+  def writeIdentityReference(path: Path, header: Header, exps: List[Exp]): String = {
     val parameters = header.parameters.map(_.variable)
     val equation = exps.map(e => writeExp(e, e.tree.filter(parameters.contains).map(v => colors(parameters.indexOf(v)))))
     s"\\hyperref[${path.mkString(":")}]{$$${writeDefinition(header, v => Some(colors(parameters.indexOf(v))))}: ${equation.mkString("=")}$$}"

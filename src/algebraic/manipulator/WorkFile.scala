@@ -2,77 +2,77 @@ package algebraic.manipulator
 
 import scala.collection.mutable
 
-class WorkFile(val path: List[String]) {
-  private var using: Map[String,List[String]] = Map.empty
-  private var proofNames: mutable.MutableList[String] = mutable.MutableList.empty
-  private var proofs: Map[String, Identity] = Map.empty
+class WorkFile(val path: Path) {
+  private var using: Map[String,Path] = Map.empty
+  private var imports: Set[Path] = Set.empty
+  private var elementNames: mutable.MutableList[String] = mutable.MutableList.empty
+  private var elements: Map[String, Element] = Map.empty
 
   class Finder(private val project: Project, private val file: WorkFile) extends Project.Finder {
-    override def apply(path: List[String]): Identity = {
-      val size = path.size
-
-      if (size == 1)
-        file.get(path.head)
-      else
-        project.getFile(toFull(path).dropRight(1)).get(path.last)
+    override def apply(path: Path): Element = path match {
+      case Path(name) if file.contains(name) => file.get(name)
+      case Path(name) =>
+        val imp = imports.find(project.getFile(_).contains(name)).getOrElse(throw new IllegalArgumentException(s"$name is not defined in ${file.path}"))
+        project.getFile(imp).get(name)
+      case _ => project.getFile(toFull(path).dropRight(1)).get(path.last)
     }
 
-    override def toFull(path: List[String]): List[String] = {
-      val size = path.length
-
-      if (size == 1)
-        file.path ++ path
-      else if (size == 2) {
-        if (using.contains(path.head))
-          using(path.head) ++ path.tail
-        else {
-          val p = file.path.dropRight(1) ++ path.take(1)
-          if (project.containsFile(p))
-            p ++ path.tail
-          else
-            path
-        }
-      } else path
+    override def toFull(path: Path): Path = path match {
+      case Path(name) if file.contains(name) => file.path + name
+      case Path(name) => imports.find(project.getFile(_).contains(name)).map(_ + name).getOrElse(throw new IllegalArgumentException(s"$name is not defined in ${file.path}"))
+      case Path(f, name) if using.contains(f) => using(f) + name
+      case Path(f, name) =>
+        val p = file.path.parent + f
+        if (project.containsFile(p))
+          p + name
+        else
+          path
+      case _ => path
     }
   }
 
-  def dependencies(project: Project): Set[List[String]] = {
+  def dependencies(project: Project): Set[Path] = {
     val finder = new Finder(project, this)
-    proofs.values.map(_.dependencies(finder)).fold(Set.empty)(_ ++ _)
+    elements.values.map(_.dependencies(finder)).fold(Set.empty)(_ ++ _)
   }
 
   def find(project: Project): Project.Finder = new Finder(project, this)
 
-  def use(key: String, path: List[String]): Unit =
+  def use(key: String, path: Path): Unit =
     if (using.contains(key))
       throw new IllegalArgumentException
     else
       using += (path.last -> path)
 
-  def add(name: String, proof: Identity): Unit = {
-    if (proofs contains name)
+  def importing(path: Path): Unit = imports += path
+
+  def add(name: String, element: Element): Unit = {
+    if (contains(name))
       throw new IllegalArgumentException
 
-    proofNames += name
-    proofs += (name -> proof)
+    elementNames += name
+    elements += (name -> element)
   }
 
-  def remove(name: String): Option[Identity] = {
-    if (!proofs.contains(name))
+  def remove(name: String): Option[Element] = {
+    if (!contains(name))
       return None
 
-    val proof = proofs(name)
-    proofs -= name
-    Some(proof)
+    val element = elements(name)
+    elementNames = elementNames.filterNot(name.equals)
+    elements -= name
+    Some(element)
   }
 
-  def get(name: String): Identity = {
-    if (proofs contains name)
-      proofs(name)
+  def get(name: String): Element = {
+    if (contains(name))
+      elements(name)
     else
       throw new IllegalArgumentException
   }
 
-  def names: List[String] = proofNames.toList
-  def uses: Map[String, List[String]] = using
+  def contains(name: String): Boolean = elements.contains(name)
+
+  def names: List[String] = elementNames.toList
+  def uses: Map[String, Path] = using
 }

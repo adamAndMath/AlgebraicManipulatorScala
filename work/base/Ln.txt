@@ -1,3 +1,5 @@
+import Numbers
+
 assume Ln(Complex a)
     ln(a)=log(\e,a);
 

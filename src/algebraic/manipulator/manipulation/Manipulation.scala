@@ -2,9 +2,7 @@ package algebraic.manipulator.manipulation
 
 import algebraic.manipulator._
 
-abstract class Manipulation {
+abstract class Manipulation extends Depending {
   def apply(finder: Project.Finder, equation: List[Exp]): List[Exp]
-  def dependencies(finder: Project.Finder): Set[List[String]] = Set.empty
+  override def dependencies(finder: Project.Finder): Set[Path] = Set.empty
 }
-
-

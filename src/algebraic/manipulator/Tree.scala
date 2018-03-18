@@ -7,7 +7,7 @@ sealed trait Tree {
 
   def ::(other: Tree): Tree = other match {
     case Tree.Leaf => this
-    case Tree.Node(c) => Tree.Node(c map {case (k,v) => (k,v::this)})
+    case Tree.Node(c) => Tree.Node(c.mapValues(v => v::this))
   }
 }
 

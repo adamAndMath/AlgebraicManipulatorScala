@@ -80,17 +80,7 @@ object Tokens {
     (l :\ (EndToken:Tokens))((p, next) => Token(p._1, p._2, p._3, next))
   }
 
-  case class Read[T](read: T, tokens: Tokens) {
-    def expect(t: ProofToken): Read[T] = Read(read, tokens.expect(t))
-    def ignore(t: ProofToken): Read[T] = Read(read, tokens.ignore(t))
-    def expect(str: String): Read[T] = expect(STRING(str))
-    def ignore(str: String): Read[T] = ignore(STRING(str))
-    def map[U](f: T=>U): Read[U] = Read(f(read), tokens)
-    def and[U](reader: Tokens => Read[U]): Read[(T,U)] = {
-      val r = reader(tokens)
-      Read((read, r.read), r.tokens)
-    }
-  }
+  type Read[T] = (T, Tokens)
 
   sealed trait Tokens {
     def token: ProofToken
@@ -99,53 +89,91 @@ object Tokens {
     def position: String
 
     def is(token: ProofToken): Boolean = this.token == token
+    def is(str: String): Boolean = is(STRING(str))
     def expect(t: ProofToken): Tokens = if (token == t) tail else throw new UnexpectedTokenException(this, t)
     def expect(str: String): Tokens = expect(STRING(str))
-    def expect[T](par: Block, reader: Tokens => Read[T]): Read[T] = reader(expect(par.open)).expect(par.close)
+    def expect[T](par: Block, reader: Tokens => Read[T]): Read[T] = {
+      val (e, tail) = reader(expect(par.open))
+      (e, tail.expect(par.close))
+    }
 
     def ignore(t: ProofToken): Tokens = if (token == t) tail else this
-    def ignore[T](par: Block, reader: Tokens => Read[T]): Read[T] = if (token == par.open) reader(tail).expect(par.close) else reader(this)
+    def ignore[T](par: Block, reader: Tokens => Read[T]): Read[T] =
+      if (token == par.open) {
+        val (e, t1) = reader(tail)
+        (e, t1.expect(par.close))
+      } else reader(this)
 
     def string(): Read[String] = token match {
-      case STRING(str) => Read(str, tail)
+      case STRING(str) => (str, tail)
       case _ => throw new UnexpectedTokenException(this, STRING("abc"))
     }
 
     def int(): Read[Int] = token match {
-      case INT(i) => Read(i, tail)
+      case INT(i) => (i, tail)
       case _ => throw new UnexpectedTokenException(this, INT(123))
     }
 
-    def readList[T](separator: ProofToken, reader: Tokens => Read[T]): Read[List[T]] =
-      reader(this).and(_.whileMatch(separator, reader)).map{ case (e, l) => e :: l}
+    def readList[T](separator: ProofToken, reader: Tokens => Read[T]): Read[List[T]] = {
+      def rl(t: Tokens, acc: List[T]): Read[List[T]] = {
+        val (e, tail) = reader(t)
+        if (tail is separator)
+          rl(tail.tail, e :: acc)
+        else
+          ((e :: acc).reverse, tail)
+      }
+      rl(this, Nil)
+    }
 
     def readList[T](separator: ProofToken, block: Block, reader: Tokens => Read[T]): Read[List[T]] = {
       val t = expect(block.open)
       if (t is block.close)
-        Read(List.empty, t.tail)
-      else
-        t.readList(separator, reader).expect(block.close)
+        (List.empty, t.tail)
+      else {
+        val (e, tail) = t.readList(separator, reader)
+        (e, tail.expect(block.close))
+      }
     }
 
-    def whileMatch[T](cond: ProofToken, reader: Tokens => Read[T]): Read[List[T]] =
-      if (is(cond)) reader(tail).and(_.whileMatch(cond, reader)).map{ case (e, l) => e :: l}
-      else Read(List.empty, this)
+    def whileMatch[T](cond: ProofToken, reader: Tokens => Read[T]): Read[List[T]] = {
+      def wm(tokens: Tokens, acc: List[T]): Read[List[T]] =
+        if (tokens is cond) {
+          val (e, t1) = reader(tokens)
+          wm(t1, e :: acc)
+        }
+        else (acc.reverse, this)
+      wm(this, Nil)
+    }
 
-    def whileNot[T](end: ProofToken, reader: Tokens => Read[T]): Read[List[T]] =
-      if (is(end)) Read(List.empty, this)
-      else reader(this).and(_.whileNot(end, reader)).map{ case (e, l) => e :: l}
+    def whileNot[T](end: ProofToken, reader: Tokens => Read[T]): Read[List[T]] = {
+      def wn(tokens: Tokens, acc: List[T]): Read[List[T]] =
+        if (tokens is end)
+          (acc.reverse, tokens)
+        else {
+          val (e, tail) = reader(tokens)
+          wn(tail, e :: acc)
+        }
+      wn(this, Nil)
+    }
 
     def when[T](cond: ProofToken, reader: Tokens => Read[T]): Read[Option[T]] =
-      if (is(cond)) reader(tail).map(Some(_))
-      else Read(None, this)
+      if (is(cond)) {
+        val (e, t1) = reader(tail)
+        (Some(e), t1)
+      } else (None, this)
 
     def whenBlock[T](cond: Block, reader: Tokens => Read[T]): Read[Option[T]] =
-      if (is(cond.open)) reader(tail).expect(cond.close).map(Some(_))
-      else Read(None, this)
+      if (is(cond.open)) {
+        val (e, t1) = reader(tail)
+        (Some(e), t1.expect(cond.close))
+      } else (None, this)
 
     def option[T](none: ProofToken, reader: Tokens => Read[T]): Read[Option[T]] =
-      if (is(none)) Read(None, tail)
-      else reader(this).map(Some(_))
+      if (is(none)) (None, tail)
+      else {
+        val (e, tail) = reader(this)
+        (Some(e), tail)
+      }
   }
 
   case object EndToken extends Tokens {

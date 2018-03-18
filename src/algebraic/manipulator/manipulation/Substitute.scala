@@ -2,11 +2,11 @@ package algebraic.manipulator.manipulation
 
 import algebraic.manipulator._
 
-case class Substitute(positions: Tree, path: List[String], from: Int, to: Int, dummies: List[Variable], parameters: Option[List[Option[Exp]]]) extends PathManipulation(positions) {
-  override def dependencies(finder: Project.Finder): Set[List[String]] = Set(finder.toFull(path))
+case class Substitute(positions: Tree, path: Path, from: Int, to: Int, dummies: List[Variable], parameters: Option[List[Option[Exp]]]) extends PathManipulation(positions) {
+  override def dependencies(finder: Project.Finder): Set[Path] = Set(finder.toFull(path))
 
   override def replace(finder: Project.Finder, exp: Exp): Exp = {
-    val identity = finder(path)
+    val identity = finder(path).asInstanceOf[Identity]
     val params: List[Option[Exp]] = parameters.getOrElse(List.fill[Option[Exp]](identity.header.parameters.length)(None))
 
     if (this.dummies.length != identity.header.dummies.length)

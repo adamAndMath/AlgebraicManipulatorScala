@@ -2,7 +2,7 @@ package algebraic.manipulator
 
 import java.nio.file.{Files, Paths}
 
-import algebraic.manipulator.Latex._
+import algebraic.manipulator.latex._
 import algebraic.manipulator.read.ProofReader
 
 object Main {
@@ -12,6 +12,6 @@ object Main {
     println(projectTemplate)
     val project = projectTemplate()
     println(project)
-    Files.write(Paths.get(args(1)), LatexWriter(project, "Simple Proofs", "Mathias Adam Møller").getBytes)
+    Files.write(Paths.get(args(1)), LatexWriter(project, args(2), args(3)).getBytes)
   }
 }

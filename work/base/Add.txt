@@ -1,3 +1,5 @@
+import Numbers
+
 assume Commute(Complex a, Complex b)
     add(a,b)=add(b,a);
 

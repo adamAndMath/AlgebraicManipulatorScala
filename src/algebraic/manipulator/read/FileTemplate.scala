@@ -2,30 +2,27 @@ package algebraic.manipulator.read
 
 import algebraic.manipulator._
 
-case class FileTemplate(path: List[String], using: Map[String, List[String]], identities: List[(String, IdentityTemplate)]) {
+case class FileTemplate(path: Path, using: Map[String, Path], imports: Set[Path], identities: List[(String, ElementTemplate)]) {
   class Finder(private val project: ProjectTemplate, private val file: FileTemplate) extends Project.Finder {
-    override def apply(path: List[String]): Identity = throw new IllegalStateException
+    override def apply(path: Path): Identity = throw new IllegalStateException
 
-    override def toFull(path: List[String]): List[String] = {
-      val size = path.length
-
-      if (size == 1)
-        file.path ++ path
-      else if (size == 2) {
-        if (using.contains(path.head))
-          using(path.head) ++ path.tail
-        else {
-          val p = file.path.dropRight(1) ++ path.take(1)
-          if (project.containsFile(p))
-            p ++ path.tail
-          else
-            path
-        }
-      } else path
+    override def toFull(path: Path): Path = path match {
+      case Path(name) if file.contains(name) => file.path + name
+      case Path(name) => imports.find(project.getFile(_).contains(name)).map(_ + name).getOrElse(throw new IllegalArgumentException(s"$name is not defined in ${file.path}"))
+      case Path(f, name) if using.contains(f) => using(f) + name
+      case Path(f, name) =>
+        val p = file.path.parent + f
+        if (project.containsFile(p))
+          p + name
+        else
+          path
+      case _ => path
     }
   }
 
-  def dependencies(project: ProjectTemplate): Set[List[String]] = {
+  def contains(name: String): Boolean = identities.exists(_._1 == name)
+
+  def dependencies(project: ProjectTemplate): Set[Path] = {
     val finder = new Finder(project, this)
     identities.map(_._2.dependencies(finder)).fold(Set.empty)(_ ++ _)
   }
@@ -34,6 +31,7 @@ case class FileTemplate(path: List[String], using: Map[String, List[String]], id
     try {
       val file = new WorkFile(path)
       using.foreach { case (k, p) => file.use(k, p) }
+      imports.foreach(file.importing)
       identities.foreach {
         case (name, ide) =>
           try {
@@ -42,7 +40,7 @@ case class FileTemplate(path: List[String], using: Map[String, List[String]], id
       }
       file
     } catch {
-      case e: RuntimeException => throw new IllegalStateException(s"Exception occurred while building ${path.mkString(".")}", e)
+      case e: RuntimeException => throw new IllegalStateException(s"Exception occurred while building $path", e)
     }
   }
 }

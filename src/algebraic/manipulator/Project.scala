@@ -1,58 +1,41 @@
 package algebraic.manipulator
 
 sealed abstract class Project {
-  def getFile(path: Traversable[String]) : WorkFile
-  def containsFile(path: Traversable[String]) : Boolean
-  def dependencies(root: Project, path: List[String]): Set[List[String]]
+  def getFile(path: Path) : WorkFile = getFile(path.toList)
+  def containsFile(path: Path) : Boolean = containsFile(path.toList)
+
+  protected def getFile(path: List[String]) : WorkFile
+  protected def containsFile(path: List[String]) : Boolean
+  def dependencies(root: Project, path: Path): Set[Path]
 }
 
 object Project {
   trait Finder{
-    def apply(path: List[String]): Identity
-    def toFull(path: List[String]): List[String]
+    def apply(path: Path): Element
+    def toFull(path: Path): Path
   }
 
   case class File(file: WorkFile) extends Project {
-    override def getFile(path: Traversable[String]): WorkFile =
+    protected override def getFile(path: List[String]): WorkFile =
       if (path.isEmpty) file else throw new IllegalArgumentException
 
-    override def containsFile(path: Traversable[String]): Boolean = path.isEmpty
+    protected override def containsFile(path: List[String]): Boolean = path.isEmpty
 
-    override def dependencies(root: Project, path: List[String]): Set[List[String]] =
-      file.dependencies(root).map(_.reverse.tail).map(common(_, path)).filterNot(_ == path)
-
-    private def common(a: List[String], b: List[String]): List[String] = common({
-      val as = a.size
-      val bs = b.size
-
-      if (as == bs)
-        a zip b
-      else if (as > bs)
-        a.drop(as - bs) zip b
-      else
-        a zip b.drop(bs - as)
-    })
-
-    private def common(set: List[(String, String)]): List[String] = {
-      val ns = set.tail.takeWhile{case (e1, e2) => e1 == e2}.length
-      if (ns+1 == set.length)
-        set.map(_._1)
-      else
-        common(set.drop(ns + set.drop(ns+1).takeWhile{case (e1, e2) => e1 != e2}.length))
-    }
+    override def dependencies(root: Project, path: Path): Set[Path] =
+      file.dependencies(root).map(_.parent).map(path.common).filterNot(_ == path)
   }
 
   class Folder(var map: Map[String, Project] = Map.empty) extends Project {
-    override def getFile(path: Traversable[String]): WorkFile =
+    protected override def getFile(path: List[String]): WorkFile =
       if (path.nonEmpty)
         map(path.head).getFile(path.tail)
       else
         throw new IllegalArgumentException
 
-    override def containsFile(path: Traversable[String]): Boolean =
+    protected override def containsFile(path: List[String]): Boolean =
       path.nonEmpty && map.contains(path.head) && map(path.head).containsFile(path.tail)
 
-    override def dependencies(root: Project, path: List[String]): Set[List[String]] =
-      map.map{ case (k, p) => k -> p.dependencies(root, k :: path)}.values.fold(Set.empty)(_ ++ _).filterNot(_ == path).filterNot(_.tail == path)
+    override def dependencies(root: Project, path: Path): Set[Path] =
+      map.map{ case (k, p) => k -> p.dependencies(root, path + k)}.values.fold(Set.empty)(_ ++ _).filterNot(_ == path).filterNot(_.parent == path)
   }
 }

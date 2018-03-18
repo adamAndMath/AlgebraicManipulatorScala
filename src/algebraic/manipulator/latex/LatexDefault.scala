@@ -1,6 +1,6 @@
-package algebraic.manipulator.Latex
+package algebraic.manipulator.latex
 
-import algebraic.manipulator.Latex.LatexWriter.{defaultWriter, writeExp}
+import algebraic.manipulator.latex.LatexWriter.{defaultWriter, writeExp}
 import algebraic.manipulator._
 
 object LatexDefault {

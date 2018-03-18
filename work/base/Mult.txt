@@ -1,3 +1,5 @@
+import Numbers
+
 assume Identity(Complex a)
     a=mult(a,1)=mult(1,a);
 

@@ -1,3 +1,5 @@
+import Numbers
+
 assume Definition(Complex a, Complex n, Complex m)
     pow(a,add(n,m))=mult(pow(a,n),pow(a,m));
 
@@ -43,13 +45,13 @@ induction CombineInt(Complex a, Complex n, Integer m) {
         let 2 pow(a,n);
         substitute Identity[1->0]:0;
         substitute Mult.Identity[0->1]:1,1;
-    } m+ {
+    } m -> add(m,1) {
         call x mult(x,pow(a,n));
         substitute Identity[1->0]:0,1;
         substitute Definition[1->0]:[0|1];
         substitute Mult.Identity[0->1]:1,1,1;
         substitute Mult.Distribute[1->0]:1,1;
-    } m- {
+    } m -> sub(m,1) {
         call x div(x,pow(a,n));
         substitute Identity[1->0]:0,1;
         substitute Division[1->0]:[0|1];

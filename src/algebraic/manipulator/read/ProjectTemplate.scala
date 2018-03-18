@@ -1,49 +1,59 @@
 package algebraic.manipulator.read
 
-import algebraic.manipulator.{Graph, Project}
+import algebraic.manipulator.{Graph, Path, Project}
 
 sealed trait ProjectTemplate {
-  def dependencies(root: ProjectTemplate, path: List[String]): Set[List[String]]
-  def containsFile(path: Traversable[String]) : Boolean
+  def containsFile(path: Path): Boolean = containsFile(path.toList)
+  def getFile(path: Path): FileTemplate = getFile(path.toList)
+
+  def dependencies(root: ProjectTemplate, path: Path): Set[Path]
+  protected def containsFile(path: List[String]): Boolean
+  protected def getFile(path: List[String]): FileTemplate
   def apply(): Project
-  def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: List[String]): Unit
+  def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: Path): Unit
 }
 
 object ProjectTemplate {
   case class Folder(map: Map[String, ProjectTemplate]) extends ProjectTemplate {
-    override def dependencies(root: ProjectTemplate, path: List[String]): Set[List[String]] =
-      map.map{ case (k, p) => k -> p.dependencies(root, k :: path)}.values.fold(Set.empty)(_ ++ _).filterNot(_ == path).filterNot(_.tail == path)
+    override def dependencies(root: ProjectTemplate, path: Path): Set[Path] =
+      map.map{ case (k, p) => k -> p.dependencies(root, path + k)}.values.fold(Set.empty)(_ ++ _).filterNot(_ == path).filterNot(_.parent == path)
 
-    override def containsFile(path: Traversable[String]): Boolean =
+    protected override def containsFile(path: List[String]): Boolean =
       path.nonEmpty && map.contains(path.head) && map(path.head).containsFile(path.tail)
+
+    protected override def getFile(path: List[String]): FileTemplate = map(path.head).getFile(path.tail)
 
     override def apply(): Project = {
       val folder = new Project.Folder()
 
-      Graph.topologicalSort[String, ProjectTemplate](map, (k, p) => p.dependencies(this, List(k)).filter(_.tail.isEmpty).map(_.head))
-        .foreach{case (k, p) => p(folder, this, folder, List(k))}
+      Graph.topologicalSort[String, ProjectTemplate](map, (k, p) => p.dependencies(this, Path(k)).filter(_.parent.isEmpty).map(_.last))
+        .foreach{case (k, p) => p(folder, this, folder, Path(k))}
 
       folder
     }
 
-    override def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: List[String]): Unit = {
+    override def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: Path): Unit = {
       val folder = new Project.Folder()
-      parent.map += (path.head -> folder)
+      parent.map += (path.last -> folder)
 
-      Graph.topologicalSort[String, ProjectTemplate](map, (k, p) => p.dependencies(rootTemplate, k :: path).filter(_.tail == path).map(_.head))
-        .foreach{case (k, p) => p(root, rootTemplate, folder, k :: path)}
+      Graph.topologicalSort[String, ProjectTemplate](map, (k, p) => p.dependencies(rootTemplate, path + k).filter(_.parent == path).map(_.last))
+        .foreach{case (k, p) => p(root, rootTemplate, folder, path + k)}
     }
   }
   case class File(file: FileTemplate) extends ProjectTemplate {
-    override def dependencies(root: ProjectTemplate, path: List[String]): Set[List[String]] =
-      file.dependencies(root).map(_.reverse.tail).map(common(_, path)).filterNot(_ == path)
+    override def dependencies(root: ProjectTemplate, path: Path): Set[Path] =
+      file.dependencies(root).map(_.parent).map(path.common).filterNot(_ == path)
 
-    override def containsFile(path: Traversable[String]): Boolean = path.isEmpty
+    protected override def containsFile(path: List[String]): Boolean = path.isEmpty
+
+    protected override def getFile(path: List[String]): FileTemplate =
+      if (path.isEmpty) file
+      else throw new IllegalArgumentException
 
     override def apply(): Project = ???
 
-    override def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: List[String]): Unit =
-      parent.map += (path.head -> Project.File(file(root)))
+    override def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: Path): Unit =
+      parent.map += (path.last -> Project.File(file(root)))
 
     private def common(a: List[String], b: List[String]): List[String] = common({
       val as = a.size

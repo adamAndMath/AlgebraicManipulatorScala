@@ -10,7 +10,7 @@ sealed abstract class Exp {
   }
 
   def get[T](tree: PathTree[T]): TraversableOnce[(T, Exp)] = tree match {
-    case PathTree.Empty() => List.empty
+    case PathTree.Empty => List.empty
     case PathTree.Leaf(l) => List(l -> this)
     case PathTree.Node(_) => throw new IllegalArgumentException
   }
@@ -25,7 +25,7 @@ sealed abstract class Exp {
   }
 
   def replace[T](tree: PathTree[T], func: (Exp, T)=>Exp): Exp = tree match {
-    case PathTree.Empty() => this
+    case PathTree.Empty => this
     case PathTree.Leaf(a) => func(this, a)
     case PathTree.Node(_) => throw new IllegalArgumentException("Illegal path")
   }
@@ -56,16 +56,17 @@ case class Operation(name: String, dummies: List[Variable], parameters: List[Exp
   override def get(tree: Tree): TraversableOnce[Exp] = tree match {
     case Tree.Leaf => List(this)
     case n @ Tree.Node(c) =>
-      if (n.min < 0 || n.max > parameters.size)
+      if (n.min < 0 || n.max >= parameters.size)
         throw new IllegalArgumentException
       else
         c.flatMap{case (k,v) => parameters(k).get(v)}
   }
 
   override def get[T](tree: PathTree[T]): TraversableOnce[(T, Exp)] = tree match {
+    case PathTree.Empty => Nil
     case PathTree.Leaf(l) => List(l -> this)
     case n @ PathTree.Node(c) =>
-      if (n.min < 0 || n.max > parameters.size)
+      if (n.min < 0 || n.max >= parameters.size)
         throw new IllegalArgumentException
       else
         c.flatMap{case (k,v) => parameters(k).get(v)}
@@ -92,7 +93,7 @@ case class Operation(name: String, dummies: List[Variable], parameters: List[Exp
   }
 
   override def replace[T](tree: PathTree[T], func: (Exp, T) => Exp): Exp = tree match {
-    case PathTree.Empty() => this
+    case PathTree.Empty => this
     case PathTree.Leaf(a) => func(this, a)
     case n @ PathTree.Node(_) =>
       if (n.min < 0 || n.max > parameters.size)

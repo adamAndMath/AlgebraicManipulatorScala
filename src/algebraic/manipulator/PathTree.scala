@@ -1,6 +1,6 @@
 package algebraic.manipulator
 
-sealed abstract class PathTree[T] {
+sealed abstract class PathTree[+T] {
   val isLeaf: Boolean = false
   val isEmpty: Boolean = false
   def nonEmpty: Boolean = !isEmpty
@@ -10,7 +10,7 @@ sealed abstract class PathTree[T] {
     case Tree.Node(c) => PathTree.Node(c map {case (k,v) => (k,v::this)})
   }
 
-  def |(other: PathTree[T]): PathTree[T]
+  def |[B >: T](other: PathTree[B]): PathTree[B]
 
   def filter(predicate: T => Boolean): PathTree[T]
   def map[U](map: T => U): PathTree[U]
@@ -18,25 +18,25 @@ sealed abstract class PathTree[T] {
 
 object PathTree {
   def leaf[T](leaf: T): PathTree[T] = Leaf(leaf)
-  def empty[T]: PathTree[T] = Empty()
+  def empty[T]: PathTree[T] = Empty
 
-  case class Empty[T]() extends PathTree[T] {
+  case object Empty extends PathTree[Nothing] {
     override val isEmpty: Boolean = true
-    override def ::(other: Tree): PathTree[T] = this
-    override def |(other: PathTree[T]): PathTree[T] = other
-    override def filter(predicate: T => Boolean): PathTree[T] = this
-    override def map[U](map: T => U): PathTree[U] = Empty()
+    override def ::(other: Tree): PathTree[Nothing] = Empty
+    override def |[B](other: PathTree[B]): PathTree[B] = other
+    override def filter(predicate: Nothing => Boolean): PathTree[Nothing] = Empty
+    override def map[U](map: Nothing => U): PathTree[U] = Empty
   }
 
   case class Leaf[T](leaf: T) extends PathTree[T] {
     override val isLeaf: Boolean = true
-    override def |(other: PathTree[T]): PathTree[T] = other match {
-      case Empty() => this
+    override def |[B >: T](other: PathTree[B]): PathTree[B] = other match {
+      case Empty => this
       case Leaf(l) => if (leaf.equals(l)) Leaf(leaf) else throw new IllegalArgumentException
       case Node(_) => throw new IllegalArgumentException
     }
 
-    override def filter(predicate: T => Boolean): PathTree[T] = if (predicate(leaf)) this else Empty()
+    override def filter(predicate: T => Boolean): PathTree[T] = if (predicate(leaf)) this else Empty
 
     override def map[U](map: T => U): PathTree[U] = Leaf(map(leaf))
 
@@ -49,12 +49,12 @@ object PathTree {
 
     override def apply(i: Int): PathTree[T] = children.getOrElse(i, empty)
 
-    override def |(other: PathTree[T]): PathTree[T] = other match {
-      case Empty() => this
+    override def |[B >: T](other: PathTree[B]): PathTree[B] = other match {
+      case Empty => this
       case Leaf(_) => throw new IllegalArgumentException
       case Node(c) => Node(
         children.filterKeys(c.contains).map{case (k,v)=>(k,v|c(k))}
-          .++[PathTree[T]](children.filterKeys(!c.contains(_))
+          .++(children.filterKeys(!c.contains(_))
           ++c.filterKeys(!children.contains(_)))
       )
     }
@@ -62,7 +62,7 @@ object PathTree {
     override def filter(predicate: T => Boolean): PathTree[T] = {
       val c = children.mapValues(_.filter(predicate)).filter{_._2.nonEmpty}
 
-      if (c.isEmpty) Empty() else Node(c)
+      if (c.isEmpty) Empty else Node(c)
     }
 
     override def map[U](map: T => U): PathTree[U] = Node(children.mapValues(_.map(map)))
