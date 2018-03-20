@@ -78,7 +78,13 @@ class InductionProof(header: Header, result: List[Exp], val inductives: Map[Vari
   def apply(v: Variable): List[InductiveStep] = steps(v)
 
   def addStep(v: Variable, params: List[Definition], exp: Exp): InductiveStep = {
-    val step = new InductiveStep(header, result, v, params, exp)
+    val step = new InductiveAssumedStep(header, result, inductives, v, params, exp)
+    steps += (v -> (steps(v) :+ step))
+    step
+  }
+
+  def addStep(v: Variable, params: List[Definition], exp: Exp, count: Int, origin: Exp): InductiveStep = {
+    val step = new InductiveProofStep(header, result, inductives, v, params, exp, count, origin)
     steps += (v -> (steps(v) :+ step))
     step
   }
@@ -89,9 +95,33 @@ class InductionProof(header: Header, result: List[Exp], val inductives: Map[Vari
     env.dependencies(header) ++ header.bind(env).dependencies(base :: origin :: result ++ inductives.values ++ steps.values.flatten)
 }
 
-class InductiveStep(header: Header, result: List[Exp], v: Variable, val params: List[Definition], val exp: Exp) extends Depending {
-  val proof: AssumedProof = new AssumedProof(Header(header.dummies, header.parameters ++ params), result.map(_.set(u => if (u != v) u else exp)), result)
+sealed abstract class InductiveStep(header: Header, result: List[Exp], val inductives: Map[Variable, Exp], v: Variable, val params: List[Definition], val exp: Exp) extends Depending {
+  val proof: Identity
+
+  def bindStep(env: Environment): Environment = StepEnvironment(env, header, result, inductives)
 
   override def dependencies(env: Environment): Set[Path] =
-    env.dependencies(header :: proof :: params) ++ env.bind(params).dependencies(exp)
+    env.dependencies(params) ++ bindStep(env).dependencies(proof) ++ env.bind(params).dependencies(exp)
+}
+
+class InductiveAssumedStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp)
+  extends InductiveStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp) {
+  override val proof: AssumedProof =
+    new AssumedProof(Header(header.dummies, header.parameters ++ params), result.map(_.set(u => if (u != v) u else exp)), result)
+}
+
+class InductiveProofStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp, count: Int, origin: Exp)
+  extends InductiveStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp) {
+  override val proof: Proof =
+    new Proof(Header(header.dummies, header.parameters ++ params), result.map(_.set(u => if (u != v) u else exp)), count, origin)
+
+  override def dependencies(env: Environment): Set[Path] = super.dependencies(env) ++ env.bind(params).dependencies(origin)
+}
+
+case class StepEnvironment(env: Environment, header: Header, result: List[Exp], inductives: Map[Variable, Exp]) extends Environment {
+  val assumption = new Assumption(Header(header.dummies, header.parameters.filterNot(d => inductives.contains(d.variable))), result)
+  override val path: Path = env.path + ""
+
+  override def apply(path: Path): Element = if (path == Path("step")) assumption else env.apply(path)
+  override def toFull(path: Path): Path = if (path == Path("step")) this.path + "step" else env.toFull(path)
 }

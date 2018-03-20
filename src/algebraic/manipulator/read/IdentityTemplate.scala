@@ -55,8 +55,17 @@ object IdentityTemplate {
     val (v, t1) = readVariable(tokens)
     val (params, t2) = t1.whenBlock(PARENTHESES, _.readList(COMMA, readDefinition))
     val (exp, t3) = readExp(t2.expect(ARROW))
-    val (ms, t4) = t3.expect(BLOCK, _.whileNot(CLOSE_BLOCK, readManipulation))
-    (InductiveStepTemplate(v, params.getOrElse(Nil), exp, ms), t4)
+    t3.expect(BLOCK, tokens => {
+      if (tokens is "let") {
+        val (count, t4) = tokens.tail.int()
+        val (origin, t5) = readExp(t4)
+        val (ms, t6) = t5.whileNot(CLOSE_BLOCK, readManipulation)
+        (InductiveProofStepTemplate(v, params.getOrElse(Nil), exp, count, origin, ms), t6)
+      } else {
+        val (ms, t4) = tokens.whileNot(CLOSE_BLOCK, readManipulation)
+        (InductiveAssumedStepTemplate(v, params.getOrElse(Nil), exp, ms), t4)
+      }
+    })
   }
 
   def readInduction(tokens: Tokens): Read[InductionProofTemplate] = {
@@ -107,16 +116,7 @@ object IdentityTemplate {
           case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation ${i + 1} in base: $m for ${proof.base.current.mkString("=")}", e)
         }
       }
-      steps.foreach(step => {
-        val obj = proof.addStep(step.v, step.params, step.exp)
-        (step.manipulations.indices zip step.manipulations).foreach { case (i, m) =>
-          try {
-            obj.proof(env, m)
-          } catch {
-            case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation ${i + 1} in ${step.v} -> ${step.exp}: $m for ${obj.proof.current.mkString("=")}", e)
-          }
-        }
-      })
+      steps.foreach(_(env, proof))
       proof
     }
 
@@ -129,8 +129,44 @@ object IdentityTemplate {
       env.dependencies(origin :: manipulations ++ inductives.values)
   }
 
-  case class InductiveStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation]) extends Depending {
+  sealed abstract class InductiveStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation]) extends Depending {
     override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(params) ++ env.bind(params).dependencies(exp :: manipulations)
+      env.dependencies(params) ++ env.bind(params).bind(Set("step")).dependencies(exp :: manipulations)
+
+    protected def bindStep(env: Environment, proof: InductionProof): Environment = StepEnvironment(env, proof.header, proof.result, proof.inductives)
+
+    def apply(env: Environment, proof: InductionProof): Unit
+  }
+
+  case class InductiveAssumedStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation])
+    extends InductiveStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation]) {
+
+    override def apply(env: Environment, proof: InductionProof): Unit = {
+      val obj = proof.addStep(v, params, exp)
+      (manipulations.indices zip manipulations).foreach { case (i, m) =>
+        try {
+          obj.proof.asInstanceOf[AssumedProof](bindStep(env, proof), m)
+        } catch {
+          case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation ${i + 1} in $v -> $exp: $m for ${obj.proof.asInstanceOf[AssumedProof].current.mkString("=")}", e)
+        }
+      }
+    }
+  }
+
+  case class InductiveProofStepTemplate(v: Variable, params: List[Definition], exp: Exp, count: Int, origin: Exp, manipulations: List[Manipulation])
+    extends InductiveStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation]) {
+
+    override def dependencies(env: Environment): Set[Path] = super.dependencies(env) ++ env.bind(params).dependencies(exp)
+
+    override def apply(env: Environment, proof: InductionProof): Unit = {
+      val obj = proof.addStep(v, params, exp, count, origin)
+      (manipulations.indices zip manipulations).foreach { case (i, m) =>
+        try {
+          obj.proof.asInstanceOf[Proof](bindStep(env, proof), m)
+        } catch {
+          case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation ${i + 1} in $v -> $exp: $m for ${obj.proof.asInstanceOf[Proof].current.mkString("=")}", e)
+        }
+      }
+    }
   }
 }

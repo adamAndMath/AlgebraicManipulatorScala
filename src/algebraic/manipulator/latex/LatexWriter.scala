@@ -110,7 +110,7 @@ object LatexWriter {
       res
     case p: InductionProof => "Proof by induction\n" +
       s"\\subsection{$$${p.inductives.toList.map{case (v, exp) => s"$v = ${writeExp(exp)}"}.mkString(",")}$$}\n${writeElement(env, p.base)}\n" +
-      p.inductives.keySet.map(v => p(v).map(i => s"\\subsection{$v'=$$${writeExp(i.exp)}$$}\n${writeElement(env, i.proof)}").mkString("\n")).mkString("\n")
+      p.inductives.keySet.map(v => p(v).map(i => s"\\subsection{$v'=$$${writeExp(i.exp)}$$}\n${writeElement(i.bindStep(env), i.proof)}").mkString("\n")).mkString("\n")
     case p: AssumedProof =>
       var exps = p.origin
       var res = ""
