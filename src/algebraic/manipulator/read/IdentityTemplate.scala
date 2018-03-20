@@ -1,13 +1,12 @@
 package algebraic.manipulator.read
 
-import algebraic.manipulator.Project.Finder
 import algebraic.manipulator._
 import algebraic.manipulator.manipulation.Manipulation
 import algebraic.manipulator.read.ProofReader._
 import algebraic.manipulator.read.Tokens._
 
 trait IdentityTemplate extends ElementTemplate {
-  override def apply(finder: Project.Finder): Identity
+  override def apply(env: Environment): Identity
 }
 
 object IdentityTemplate {
@@ -75,17 +74,18 @@ object IdentityTemplate {
   }
 
   case class AssumptionTemplate(header: Header, result: List[Exp]) extends IdentityTemplate {
-    override def apply(finder: Finder): Assumption = new Assumption(header, result)
+    override def apply(env: Environment): Assumption = new Assumption(header, result)
 
-    override def dependencies(finder: Finder): Set[Path] = header.dependencies(finder)
+    override def dependencies(env: Environment): Set[Path] =
+      env.dependencies(header) ++ header.bind(env).dependencies(result)
   }
 
   case class ProofTemplate(header: Header, result: List[Exp], count: Int, origin: Exp, manipulations: List[Manipulation]) extends IdentityTemplate {
-    override def apply(finder: Finder): Proof = {
+    override def apply(env: Environment): Proof = {
       val proof = new Proof(header, result, count, origin)
       (manipulations.indices zip manipulations).foreach { case (i, m) =>
         try {
-          proof(finder, m)
+          proof(env, m)
         } catch {
           case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation ${i + 1}: $m for ${proof.current.mkString("=")}", e)
         }
@@ -93,15 +93,16 @@ object IdentityTemplate {
       proof
     }
 
-    override def dependencies(finder: Finder): Set[Path] = (header :: manipulations).map(_.dependencies(finder)).fold(Set.empty)(_ ++ _)
+    override def dependencies(env: Environment): Set[Path] =
+      env.dependencies(header) ++ header.bind(env).dependencies(manipulations)
   }
 
   case class InductionProofTemplate(header: Header, result: List[Exp], base: InductiveBaseTemplate, steps: List[InductiveStepTemplate]) extends IdentityTemplate {
-    override def apply(finder: Finder): InductionProof = {
+    override def apply(env: Environment): InductionProof = {
       val proof = new InductionProof(header, result, base.inductives, base.count, base.origin)
       (base.manipulations.indices zip base.manipulations).foreach { case (i, m) =>
         try {
-          proof.base(finder, m)
+          proof.base(env, m)
         } catch {
           case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation ${i + 1} in base: $m for ${proof.base.current.mkString("=")}", e)
         }
@@ -110,7 +111,7 @@ object IdentityTemplate {
         val obj = proof.addStep(step.v, step.params, step.exp)
         (step.manipulations.indices zip step.manipulations).foreach { case (i, m) =>
           try {
-            obj.proof(finder, m)
+            obj.proof(env, m)
           } catch {
             case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation ${i + 1} in ${step.v} -> ${step.exp}: $m for ${obj.proof.current.mkString("=")}", e)
           }
@@ -119,14 +120,17 @@ object IdentityTemplate {
       proof
     }
 
-    override def dependencies(finder: Finder): Set[Path] = (header :: base :: steps).map(_.dependencies(finder)).fold(Set.empty)(_ ++ _)
+    override def dependencies(env: Environment): Set[Path] =
+      env.dependencies(header) ++ header.bind(env).dependencies(base :: steps)
   }
 
   case class InductiveBaseTemplate(inductives: Map[Variable, Exp], count: Int, origin: Exp, manipulations: List[Manipulation]) extends Depending {
-    override def dependencies(finder: Finder): Set[Path] = manipulations.map(_.dependencies(finder)).fold(Set.empty)(_ ++ _)
+    override def dependencies(env: Environment): Set[Path] =
+      env.dependencies(origin :: manipulations ++ inductives.values)
   }
 
   case class InductiveStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation]) extends Depending {
-    override def dependencies(finder: Finder): Set[Path] = (params ++ manipulations).map(_.dependencies(finder)).fold(Set.empty)(_ ++ _)
+    override def dependencies(env: Environment): Set[Path] =
+      env.dependencies(params) ++ env.bind(params).dependencies(exp :: manipulations)
   }
 }

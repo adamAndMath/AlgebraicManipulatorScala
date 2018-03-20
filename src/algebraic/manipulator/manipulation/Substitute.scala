@@ -3,10 +3,10 @@ package algebraic.manipulator.manipulation
 import algebraic.manipulator._
 
 case class Substitute(positions: Tree, path: Path, from: Int, to: Int, dummies: List[Variable], parameters: Option[List[Option[Exp]]]) extends PathManipulation(positions) {
-  override def dependencies(finder: Project.Finder): Set[Path] = Set(finder.toFull(path))
+  override def dependencies(env: Environment): Set[Path] = Set(env.toFull(path))
 
-  override def replace(finder: Project.Finder, exp: Exp): Exp = {
-    val identity = finder(path).asInstanceOf[Identity]
+  override def replace(env: Environment, exp: Exp): Exp = {
+    val identity = env(path).asInstanceOf[Identity]
     val params: List[Option[Exp]] = parameters.getOrElse(List.fill[Option[Exp]](identity.header.parameters.length)(None))
 
     if (this.dummies.length != identity.header.dummies.length)
@@ -43,6 +43,6 @@ case class Substitute(positions: Tree, path: Path, from: Int, to: Int, dummies: 
     if (fromSet != exp)
       throw new IllegalStateException(s"Expected $fromSet, but received $exp")
 
-    identity.result(to).setAll((identity.header.dummies zip dummies).toMap, pars)
+    identity.result(to).setAll((identity.header.dummies zip dummies).toMap, v => pars.getOrElse(v, v))
   }
 }

@@ -5,7 +5,9 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 import algebraic.manipulator._
+import algebraic.manipulator.function._
 import algebraic.manipulator.manipulation._
+import algebraic.manipulator.objects._
 import algebraic.manipulator.structure._
 
 object LatexWriter {
@@ -39,11 +41,11 @@ object LatexWriter {
   }
 
   def writeFile(project: Project, file: WorkFile): String = {
-    val finder = file.find(project)
+    val env = file.env(project)
 
     s"\\chapter{${file.path.last}}\n" +
-      file.names.filter(file.get(_).isInstanceOf[InductiveStructure]).map(name =>
-        writeInductiveStructure(name, file.get(name).asInstanceOf[InductiveStructure])
+      file.names.filter(n => isDefinition(file.get(n))).map(name =>
+        writeElementDefinition(name, file.get(name))
       ).mkString +
       "Given the following assumptions:\n" +
       file.names.filter(file.get(_).isInstanceOf[Assumption]).map(name =>
@@ -53,27 +55,38 @@ object LatexWriter {
       ).mkString +
       file.names
         .filterNot(file.get(_).isInstanceOf[Assumption])
-        .filterNot(file.get(_).isInstanceOf[InductiveStructure])
+        .filterNot(n => isDefinition(file.get(n)))
         .filterNot(file.get(_) == SimpleStructure)
         .map(name => {
         s"\\section{$name}\n" +
           s"\\label{${(file.path + name).mkString(":")}}\n" +
-          writeElement(finder, file.get(name))
+          writeElement(env, file.get(name))
       }).mkString
   }
 
-  def writeInductiveStructure(name: String, structure: InductiveStructure): String = {
-    val typeOut = writeType(SimpleType(name))
-    s"Let $$$typeOut$$ be the smallest set that satisfies " +
-      s"$$${writeDefinition(Header(Nil, structure.base.params))}: ${writeExp(structure.base.exp)} \\in $typeOut$$" +
-      structure.steps.map(step => s" and $$${writeDefinition(Header(Nil, Definition(SimpleType(name), step.v.name) :: step.params))}: ${writeExp(step.exp)} \\in $typeOut$$").mkString +
-    "\\\\\n"
+  def isDefinition(element: Element): Boolean = element match {
+    case InductiveStructure(_, _) => true
+    case SimpleStructure => false
+    case _: ObjectElement => true
+    case _: Function => true
+    case _: Identity => false
+  }
+
+  def writeElementDefinition(name: String, element: Element): String = element match {
+    case AssumedObject => s"Let $name be an object\\\\\n"
+    case SimpleObject(exp) => s"Let $$${writeExp(Variable(name))} = ${writeExp(exp)}$$"
+    case InductiveStructure(base, steps) =>
+      val typeOut = writeType(SimpleType(name))
+      s"Let $$$typeOut$$ be the smallest set that satisfies " +
+        s"$$${writeDefinition(Header(Nil, base.params))}: ${writeExp(base.exp)} \\in $typeOut$$" +
+        steps.map(step => s" and $$${writeDefinition(Header(Nil, Definition(SimpleType(name), step.v.name) :: step.params))}: ${writeExp(step.exp)} \\in $typeOut$$").mkString +
+        "\\\\\n"
   }
 
   def writeAssumption(assumption: Assumption): String =
     s"$$${writeDefinition(assumption.header)}: ${assumption.result.map(writeExp(_)).mkString("=")}$$"
 
-  def writeElement(finder: Project.Finder, element: Element): String = element match {
+  def writeElement(env: Environment, element: Element): String = element match {
     case p: Proof =>
       var exps = List.fill(p.count)(p.origin)
       var res = ""
@@ -82,13 +95,13 @@ object LatexWriter {
       var textColor = PathTree.empty[String]
 
       for (manipulation <- p.manipulations) {
-        backColor = getInputColors(finder, exps, manipulation)
+        backColor = getInputColors(env, exps, manipulation)
         res += "$$" + (exps.indices zip exps).map{case (i, exp) => writeExp(exp, textColor(i), backColor(i))}.mkString("=") + "$$\n"
 
-        exps = manipulation(finder, exps)
-        textColor = getOutputColors(finder, exps, manipulation)
+        exps = manipulation(env, exps)
+        textColor = getOutputColors(env, exps, manipulation)
 
-        res += s"{\\color{gray}${writeManipulation(finder, manipulation)}}\n"
+        res += s"{\\color{gray}${writeManipulation(env, manipulation)}}\n"
       }
 
       backColor = PathTree.empty
@@ -96,8 +109,8 @@ object LatexWriter {
 
       res
     case p: InductionProof => "Proof by induction\n" +
-      s"\\subsection{$$${p.inductives.toList.map{case (v, exp) => s"$v = ${writeExp(exp)}"}.mkString(",")}$$}\n${writeElement(finder, p.base)}\n" +
-      p.inductives.keySet.map(v => p(v).map(i => s"\\subsection{$v'=$$${writeExp(i.exp)}$$}\n${writeElement(finder, i.proof)}").mkString("\n")).mkString("\n")
+      s"\\subsection{$$${p.inductives.toList.map{case (v, exp) => s"$v = ${writeExp(exp)}"}.mkString(",")}$$}\n${writeElement(env, p.base)}\n" +
+      p.inductives.keySet.map(v => p(v).map(i => s"\\subsection{$v'=$$${writeExp(i.exp)}$$}\n${writeElement(env, i.proof)}").mkString("\n")).mkString("\n")
     case p: AssumedProof =>
       var exps = p.origin
       var res = ""
@@ -106,13 +119,13 @@ object LatexWriter {
       var textColor = PathTree.empty[String]
 
       for (manipulation <- p.manipulations) {
-        backColor = getInputColors(finder, exps, manipulation)
+        backColor = getInputColors(env, exps, manipulation)
         res += "$$" + (exps.indices zip exps).map{case (i, exp) => writeExp(exp, textColor(i), backColor(i))}.mkString("=") + "$$\n"
 
-        exps = manipulation(finder, exps)
-        textColor = getOutputColors(finder, exps, manipulation)
+        exps = manipulation(env, exps)
+        textColor = getOutputColors(env, exps, manipulation)
 
-        res += s"{\\color{gray}${writeManipulation(finder, manipulation)}}\n"
+        res += s"{\\color{gray}${writeManipulation(env, manipulation)}}\n"
       }
 
       backColor = PathTree.empty
@@ -121,10 +134,10 @@ object LatexWriter {
       res
   }
 
-  def getInputColors(finder: Project.Finder, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
+  def getInputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, from, _, _, _) =>
-      val identity = finder(path).asInstanceOf[Identity]
+      val identity = env(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(from).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
     case ToEval(positions, parameters) =>
@@ -133,10 +146,10 @@ object LatexWriter {
     case Rename(positions, _, _) => positions :> colors.head
   }
 
-  def getOutputColors(finder: Project.Finder, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
+  def getOutputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, _, to, _, _) =>
-      val identity = finder(path).asInstanceOf[Identity]
+      val identity = env(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(to).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
     case ToEval(positions, parameters) =>
@@ -147,11 +160,11 @@ object LatexWriter {
     case Rename(positions, _, _) => positions :> colors.head
   }
 
-  def writeManipulation(finder: Project.Finder, manipulation: Manipulation): String = manipulation match {
+  def writeManipulation(env: Environment, manipulation: Manipulation): String = manipulation match {
     case Call(temp, exp) => s"Call $$${writeExp(exp, exp.tree.filter(_ == temp).map(_ => colors.head))}$$"
     case Substitute(_, path, from, to, _, _) =>
-      val identity = finder(path).asInstanceOf[Identity]
-      writeIdentityReference(finder.toFull(path), identity.header, List(from, to).map(identity.result))
+      val identity = env(path).asInstanceOf[Identity]
+      writeIdentityReference(env.toFull(path), identity.header, List(from, to).map(identity.result))
     case ToEval(_, _) => "Convert to function call"
     case FromEval(_) => "Convert from function call"
     case Rename(_, from, to) => s"Renaming $from to $to"
@@ -195,7 +208,6 @@ object LatexWriter {
           else
             defaultWriter(op, textColor, backColor, binding)
         case Variable(name) => name
-        case Constant(name) => name
         case IntVal(v) => v.toString
       }
     }

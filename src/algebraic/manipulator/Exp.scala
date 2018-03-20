@@ -1,6 +1,7 @@
 package algebraic.manipulator
 
-sealed abstract class Exp {
+sealed abstract class Exp extends Depending {
+  override def dependencies(env: Environment): Set[Path] = Set.empty
   def getFree: Set[Variable] = Set.empty
   def getBound: Set[Variable] = Set.empty
 
@@ -35,13 +36,10 @@ case class IntVal(v: Int) extends Exp {
   override def toString: String = v.toString
 }
 
-case class Constant(name: String) extends Exp {
-  override def toString: String = s"\\$name"
-}
-
 case class Variable(name: String) extends Exp {
   override def toString: String = name
 
+  override def dependencies(env: Environment): Set[Path] = Set(env.toFull(Path(name)))
   override def getFree: Set[Variable] = Set(this)
 
   override def set(map: Variable => Exp): Exp = map(this)
@@ -52,6 +50,9 @@ case class Variable(name: String) extends Exp {
 
 case class Operation(name: String, dummies: List[Variable], parameters: List[Exp]) extends Exp {
   override def toString: String = name + {if (dummies.isEmpty) "" else dummies.mkString("<", ",", ">")} + parameters.mkString("(",",",")")
+
+  override def dependencies(env: Environment): Set[Path] =
+    (if (dummies.isEmpty) env else env.bind(dummies.map(_.name).toSet)).dependencies(parameters)
 
   override def get(tree: Tree): TraversableOnce[Exp] = tree match {
     case Tree.Leaf => List(this)

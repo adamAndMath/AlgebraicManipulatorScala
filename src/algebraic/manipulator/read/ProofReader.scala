@@ -42,12 +42,12 @@ object ProofReader {
 
   def readExp(tokens: Tokens): Read[Exp] = tokens.token match {
     case INT(_) => readInt(tokens)
-    case BACKSLASH => readConstant(tokens)
     case STRING(_) =>
       if (tokens.tail.is(OPEN_PAR) || tokens.tail.is(LESS))
         readOperation(tokens)
       else
         readVariable(tokens)
+    case _ => throw new UnexpectedTokenException(tokens, STRING("abc"))
   }
 
   def readOperation(tokens: Tokens): Read[Operation] = {
@@ -56,11 +56,6 @@ object ProofReader {
     val (par, t3) = t2.readList(COMMA, PARENTHESES, readExp)
 
     (Operation(name, dum.getOrElse(List.empty), par), t3)
-  }
-
-  def readConstant(tokens: Tokens): Read[Constant] = {
-    val (name, tail) = tokens.expect(BACKSLASH).string()
-    (Constant(name), tail)
   }
 
   def readVariable(tokens: Tokens): Read[Variable] = {
@@ -157,26 +152,37 @@ object ProofReader {
   }
 
   def readElement(tokens: Tokens): Read[(String, ElementTemplate)] = {
-    if (tokens.tail is "struct") {
-      val (typeName, t1) = tokens.string()
-      val (name, t2) = t1.tail.string()
+    tokens.tail.token match {
+      case STRING("struct") =>
+        val (typeName, t1) = tokens.string()
+        val (name, t2) = t1.tail.string()
 
-      if (!StructureTemplate.readers.contains(typeName))
-        throw new TokenException(tokens, s"$typeName is not a valid structure type")
+        if (!StructureTemplate.readers.contains(typeName))
+          throw new TokenException(tokens, s"$typeName is not a valid structure type")
 
-      val (structure, t3) = StructureTemplate.readers(typeName)(t2)
+        val (structure, t3) = StructureTemplate.readers(typeName)(t2)
 
-      ((name, structure), t3)
-    } else {
-      val (typeName, t1) = tokens.string()
-      val (name, t2) = t1.string()
+        ((name, structure), t3)
+      case STRING("object") =>
+        val (typeName, t1) = tokens.string()
+        val (name, t2) = t1.tail.string()
 
-      if (!IdentityTemplate.readers.contains(typeName))
-        throw new TokenException(tokens, s"$typeName is not a valid identity type")
+        if (!ObjectTemplate.readers.contains(typeName))
+          throw new TokenException(tokens, s"$typeName is not a valid structure type")
 
-      val (identity, t3) = IdentityTemplate.readers(typeName)(t2)
+        val (obj, t3) = ObjectTemplate.readers(typeName)(t2)
 
-      ((name, identity), t3)
+        ((name, obj), t3)
+      case _ =>
+        val (typeName, t1) = tokens.string()
+        val (name, t2) = t1.string()
+
+        if (!IdentityTemplate.readers.contains(typeName))
+          throw new TokenException(tokens, s"$typeName is not a valid identity type")
+
+        val (identity, t3) = IdentityTemplate.readers(typeName)(t2)
+
+        ((name, identity), t3)
     }
   }
 

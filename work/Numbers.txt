@@ -1,0 +1,8 @@
+assume struct Complex
+assume struct Real
+assume struct Integer
+/*inductive struct Integer {
+    base(Integer i) i
+    step i -> add(i, 1)
+    step i -> sub(i, 1)
+}*/

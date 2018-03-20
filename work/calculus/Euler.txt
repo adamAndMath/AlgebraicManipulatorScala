@@ -1,0 +1,5 @@
+
+define object e=lim<h>(0,pow(add(1,h),div(1,h)))
+
+assume Euler<h>()
+    e=lim<h>(0,pow(add(1,h),div(1,h)));

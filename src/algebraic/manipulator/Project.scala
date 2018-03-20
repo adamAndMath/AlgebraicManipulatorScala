@@ -10,11 +10,6 @@ sealed abstract class Project {
 }
 
 object Project {
-  trait Finder{
-    def apply(path: Path): Element
-    def toFull(path: Path): Path
-  }
-
   case class File(file: WorkFile) extends Project {
     protected override def getFile(path: List[String]): WorkFile =
       if (path.isEmpty) file else throw new IllegalArgumentException

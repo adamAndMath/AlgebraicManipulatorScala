@@ -1,27 +1,29 @@
 import Numbers
+import calculus.Euler
+using base.Log
 
 assume Ln(Complex a)
-    ln(a)=log(\e,a);
+    ln(a)=log(e,a);
 
 work Pow(Complex a) {
 	let 3 a;
-	substitute Log.Pow[0->1](\e,-):1;
-	substitute Log.Pow[0->2](\e,-):2;
+	substitute Log.Pow[0->1](e,-):1;
+	substitute Log.Pow[0->2](e,-):2;
 	substitute Ln[1->0]:[1|2,1];
 } result {
-	a=ln(pow(\e,a))=pow(\e,ln(a))
+	a=ln(pow(e,a))=pow(e,ln(a))
 }
 
 work Inverse() {
-	let 2 log(\e,\e);
+	let 2 log(e,e);
 	substitute Log.Inverse[0->1]:1;
 	substitute Ln[1->0]:0;
 } result {
-	ln(\e)=1
+	ln(e)=1
 }
 
 work Singularity() {
-	let 2 log(\e,1);
+	let 2 log(e,1);
 	substitute Log.Singularity[0->1]:1;
 	substitute Ln[1->0]:0;
 } result {
@@ -29,7 +31,7 @@ work Singularity() {
 }
 
 work Distribute(Complex a, Complex b) {
-	let 2 log(\e,mult(a,b));
+	let 2 log(e,mult(a,b));
 	substitute Log.Distribute[0->1]:1;
 	substitute Ln[1->0]:[0|1,[0|1]];
 } result {
@@ -37,7 +39,7 @@ work Distribute(Complex a, Complex b) {
 }
 
 work DistributeSub(Complex a, Complex b) {
-	let 2 log(\e,div(a,b));
+	let 2 log(e,div(a,b));
 	substitute Log.DistributeSub[0->1]:1;
 	substitute Ln[1->0]:[0|1,[0|1]];
 } result {
@@ -45,7 +47,7 @@ work DistributeSub(Complex a, Complex b) {
 }
 
 work Mult(Complex a, Complex p) {
-	let 3 log(\e,pow(a,p));
+	let 3 log(e,pow(a,p));
 	substitute Log.Mult[0->1]:1;
 	substitute Log.Mult[0->2]:2;
 	substitute Ln[1->0]:[0|1,0|2,1];
@@ -55,7 +57,7 @@ work Mult(Complex a, Complex p) {
 
 work ChangeBase(Complex a, Complex b) {
     let 2 log(a,b);
-    substitute Log.ChangeBase[0->1](-,-,\e):1;
+    substitute Log.ChangeBase[0->1](-,-,e):1;
     substitute Ln[1->0]:1,[0|1];
 } result {
     log(a,b)=div(ln(b),ln(a))

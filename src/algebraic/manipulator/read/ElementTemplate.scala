@@ -1,7 +1,7 @@
 package algebraic.manipulator.read
 
-import algebraic.manipulator.{Depending, Element, Project}
+import algebraic.manipulator.{Depending, Element, Environment}
 
 trait ElementTemplate extends Depending {
-  def apply(finder: Project.Finder): Element
+  def apply(env: Environment): Element
 }

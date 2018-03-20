@@ -1,5 +1,5 @@
 package algebraic.manipulator
 
 trait Depending {
-  def dependencies(finder: Project.Finder): Set[Path]
+  def dependencies(env: Environment): Set[Path]
 }

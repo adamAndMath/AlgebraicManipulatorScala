@@ -8,7 +8,9 @@ class WorkFile(val path: Path) {
   private var elementNames: mutable.MutableList[String] = mutable.MutableList.empty
   private var elements: Map[String, Element] = Map.empty
 
-  class Finder(private val project: Project, private val file: WorkFile) extends Project.Finder {
+  class FileEnvironment(private val project: Project, private val file: WorkFile) extends Environment {
+    override val path: Path = file.path
+
     override def apply(path: Path): Element = path match {
       case Path(name) if file.contains(name) => file.get(name)
       case Path(name) =>
@@ -32,11 +34,10 @@ class WorkFile(val path: Path) {
   }
 
   def dependencies(project: Project): Set[Path] = {
-    val finder = new Finder(project, this)
-    elements.values.map(_.dependencies(finder)).fold(Set.empty)(_ ++ _)
+    env(project).dependencies(elements.values.toList)
   }
 
-  def find(project: Project): Project.Finder = new Finder(project, this)
+  def env(project: Project): Environment = new FileEnvironment(project, this)
 
   def use(key: String, path: Path): Unit =
     if (using.contains(key))
@@ -68,7 +69,7 @@ class WorkFile(val path: Path) {
     if (contains(name))
       elements(name)
     else
-      throw new IllegalArgumentException
+      throw new IllegalArgumentException(name)
   }
 
   def contains(name: String): Boolean = elements.contains(name)
