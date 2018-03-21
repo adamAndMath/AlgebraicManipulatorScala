@@ -5,7 +5,7 @@ trait Environment {
   def apply(path: Path): Element
   def toFull(path: Path): Path
 
-  def dependencies(depending: Depending): Set[Path] = depending.dependencies(this)
+  def dependencies(depending: Depending): Set[Path] = dependencies(List(depending))
 
   def dependencies(depending: Iterable[Depending]): Set[Path] =
     depending.map(_.dependencies(this)).fold(Set.empty)(_++_).filterNot(_.parent == path)

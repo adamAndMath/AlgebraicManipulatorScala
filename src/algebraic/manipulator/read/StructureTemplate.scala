@@ -44,6 +44,6 @@ object StructureTemplate {
   case class InductiveStructureTemplate(base: InductiveBase, steps: List[InductiveStep]) extends StructureTemplate {
     override def apply(env: Environment): Structure = InductiveStructure(base, steps)
 
-    override def dependencies(env: Environment): Set[Path] = (base :: steps).map(_.dependencies(env)).fold(Set.empty)(_++_)
+    override def dependencies(env: Environment): Set[Path] = env.dependencies(base :: steps)
   }
 }

@@ -17,7 +17,7 @@ object Project {
     protected override def containsFile(path: List[String]): Boolean = path.isEmpty
 
     override def dependencies(root: Project, path: Path): Set[Path] =
-      file.dependencies(root).map(_.parent).map(path.common).filterNot(_ == path)
+      file.dependencies(root).map(path.common).filterNot(_ == path)
   }
 
   class Folder(var map: Map[String, Project] = Map.empty) extends Project {

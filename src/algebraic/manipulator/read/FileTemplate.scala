@@ -25,7 +25,7 @@ case class FileTemplate(path: Path, using: Map[String, Path], imports: Set[Path]
   def contains(name: String): Boolean = identities.exists(_._1 == name)
 
   def dependencies(project: ProjectTemplate): Set[Path] = {
-    new FileEnvironment(project, this).dependencies(identities.map(_._2))
+    new FileEnvironment(project, this).dependencies(identities.map(_._2)) ++ imports ++ using.values
   }
 
   def apply(project: Project): WorkFile = {

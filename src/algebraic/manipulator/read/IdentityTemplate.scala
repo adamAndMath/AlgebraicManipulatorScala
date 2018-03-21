@@ -131,7 +131,7 @@ object IdentityTemplate {
 
   sealed abstract class InductiveStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation]) extends Depending {
     override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(params) ++ env.bind(params).bind(Set("step")).dependencies(exp :: manipulations)
+      env.dependencies(params) ++ env.bind(params).dependencies(_.bind(Set("step")).dependencies(exp :: manipulations))
 
     protected def bindStep(env: Environment, proof: InductionProof): Environment = StepEnvironment(env, proof.header, proof.result, proof.inductives)
 

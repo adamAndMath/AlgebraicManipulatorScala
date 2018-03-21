@@ -42,7 +42,7 @@ object ProjectTemplate {
   }
   case class File(file: FileTemplate) extends ProjectTemplate {
     override def dependencies(root: ProjectTemplate, path: Path): Set[Path] =
-      file.dependencies(root).map(_.parent).map(path.common).filterNot(_ == path)
+      file.dependencies(root).map(path.common).filterNot(_ == path)
 
     protected override def containsFile(path: List[String]): Boolean = path.isEmpty
 
@@ -54,25 +54,5 @@ object ProjectTemplate {
 
     override def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: Path): Unit =
       parent.map += (path.last -> Project.File(file(root)))
-
-    private def common(a: List[String], b: List[String]): List[String] = common({
-      val as = a.size
-      val bs = b.size
-
-      if (as == bs)
-        a zip b
-      else if (as > bs)
-        a.drop(as - bs) zip b
-      else
-        a zip b.drop(bs - as)
-    })
-
-    private def common(set: List[(String, String)]): List[String] = {
-      val ns = set.tail.takeWhile{case (e1, e2) => e1 == e2}.length
-      if (ns+1 == set.length)
-        set.map(_._1)
-      else
-        common(set.drop(ns + set.drop(ns+1).takeWhile{case (e1, e2) => e1 != e2}.length))
-    }
   }
 }

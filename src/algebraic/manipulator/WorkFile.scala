@@ -34,7 +34,7 @@ class WorkFile(val path: Path) {
   }
 
   def dependencies(project: Project): Set[Path] = {
-    env(project).dependencies(elements.values.toList)
+    env(project).dependencies(elements.values.toList) ++ imports ++ using.values
   }
 
   def env(project: Project): Environment = new FileEnvironment(project, this)
