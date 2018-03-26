@@ -5,7 +5,7 @@ assume Pow(Complex a, Complex b)
 
 work Inverse(Complex a) {
 	let 2 log(a,a);
-	substitute Pow.Identity[1->0]:1,1;
+	substitute ~Pow.Identity:1,1;
 	substitute Pow[1->0]:1;
 } result {
 	log(a,a)=1
@@ -13,7 +13,7 @@ work Inverse(Complex a) {
 
 work Singularity(Complex a) {
 	let 2 log(a,1);
-	substitute Pow.Singularity[1->0](a):1,1;
+	substitute ~Pow.Singularity(a):1,1;
 	substitute Pow[1->0]:1;
 } result {
 	log(a,1)=0
@@ -22,7 +22,7 @@ work Singularity(Complex a) {
 work Distribute(Complex a, Complex b, Complex c) {
 	let 2 log(a,mult(b,c));
 	substitute Pow[0->2](a,-):1,1,[0|1];
-	substitute Pow.Definition[1->0]:1,1;
+	substitute ~Pow.Definition:1,1;
 	substitute Pow[1->0]:1;
 } result {
 	log(a,mult(b,c))=add(log(a,b),log(a,c))
@@ -31,7 +31,7 @@ work Distribute(Complex a, Complex b, Complex c) {
 work DistributeSub(Complex a, Complex b, Complex c) {
 	let 2 log(a,div(b,c));
 	substitute Pow[0->2](a,-):1,1,[0|1];
-	substitute Pow.Division[1->0]:1,1;
+	substitute ~Pow.Division:1,1;
 	substitute Pow[1->0]:1;
 } result {
 	log(a,div(b,c))=sub(log(a,b),log(a,c))
@@ -40,9 +40,9 @@ work DistributeSub(Complex a, Complex b, Complex c) {
 work Mult(Complex a, Complex b, Complex p) {
 	let 3 log(a,pow(b,p));
 	substitute Pow[0->2](a,-):[1,1,0|2,1,0];
-	substitute Pow.Combine[0->1]:[1,1|2,1];
+	substitute Pow.Combine:[1,1|2,1];
 	substitute Pow[1->0]:[1|2];
-	substitute Mult.Commute[0->1]:2;
+	substitute Mult.Commute:2;
 } result {
 	log(a,pow(b,p))=mult(log(a,b),p)=mult(p,log(a,b))
 }
@@ -50,7 +50,7 @@ work Mult(Complex a, Complex b, Complex p) {
 work ChangeBase(Complex a, Complex b, Complex c) {
     let 2 log(a,b);
     substitute Div.Mult1[0->1](-,log(c,a)):1;
-    substitute Mult.Commute[0->1]:1,0;
+    substitute Mult.Commute:1,0;
     substitute Mult[1->0]:1,0;
     substitute Pow[2->0]:1,0,1;
 } result {

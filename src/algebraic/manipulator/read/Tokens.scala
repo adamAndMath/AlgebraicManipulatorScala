@@ -28,6 +28,7 @@ object Tokens {
         case ',' => go(Token(pos, line, COMMA, prev), pos + 1, line, code.tail)
         case ':' => go(Token(pos, line, COLON, prev), pos + 1, line, code.tail)
         case ';' => go(Token(pos, line, SEMI, prev), pos + 1, line, code.tail)
+        case '~' => go(Token(pos, line, TILDE, prev), pos + 1, line, code.tail)
         case '/' =>
           if (code.tail.head == '/') {
             val skip = code.takeWhile(_ != '\n').length
@@ -208,6 +209,7 @@ object Tokens {
   case object PLUS extends ProofToken
   case object DASH extends ProofToken
   case object ARROW extends ProofToken
+  case object TILDE extends ProofToken
   case class STRING(str: String) extends ProofToken
   case class INT(i: Int) extends ProofToken
 

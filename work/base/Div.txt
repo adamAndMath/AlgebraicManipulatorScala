@@ -23,7 +23,7 @@ work Mult2(Complex a, Complex b) {
     let 2 div(a,b);
     substitute Mult.Identity[0->1]:1,0;
     substitute Mult1[0->2](-,b):1,0,1;
-    substitute Mult.Associate[1->0]:1,0;
+    substitute ~Mult.Associate:1,0;
     substitute Mult1[1->0]:1;
 } result {
     div(a,b)=mult(a,div(1,b))
@@ -31,13 +31,13 @@ work Mult2(Complex a, Complex b) {
 
 work Commute(Complex a, Complex b, Complex c) {
     let 3 div(div(a,b),c);
-    substitute Mult2[0->1]:1;
-    substitute Mult2[0->1]:1,0;
-    substitute Mult.Associate[0->1]:1;
-    substitute Mult.Commute[0->1]:1,1;
-    substitute Mult.Associate[1->0]:1;
-    substitute Mult2[1->0]:1,0;
-    substitute Mult2[1->0]:1;
+    substitute Mult2:1;
+    substitute Mult2:1,0;
+    substitute Mult.Associate:1;
+    substitute Mult.Commute:1,1;
+    substitute ~Mult.Associate:1;
+    substitute ~Mult2:1,0;
+    substitute ~Mult2:1;
 
     substitute Mult1[0->2](-,mult(b,c)):2,0,0;
     substitute Mult.Commute[0->1]:2,0,0,1;
@@ -66,9 +66,9 @@ work Commute2(Complex a, Complex b, Complex c) {
 work Distribute(Complex f, Complex a, Complex b) {
     let 2 div(add(a,b),f);
     substitute Mult2[0->1]:1;
-    substitute Mult.Commute[0->1]:1;
-    substitute Mult.Distribute[0->1]:1;
-    substitute Mult.Commute[1->0]:1,[0|1];
+    substitute Mult.Commute:1;
+    substitute Mult.Distribute:1;
+    substitute Mult.Commute:1,[0|1];
     substitute Mult2[1->0]:1,[0|1];
 } result {
     div(add(a,b),f)=add(div(a,f),div(b,f))
@@ -77,7 +77,7 @@ work Distribute(Complex f, Complex a, Complex b) {
 work DistributeSub(Complex f, Complex a, Complex b) {
     let 2 sub(div(a,f),div(b,f));
     substitute Sub.Add1[0->2](-,b):0,0,0;
-    substitute Distribute[0->1]:0,0;
+    substitute Distribute:0,0;
     substitute Sub.Add1[1->0]:0;
 } result {
     div(sub(a,b),f)=sub(div(a,f),div(b,f))
@@ -85,8 +85,8 @@ work DistributeSub(Complex f, Complex a, Complex b) {
 
 work Singularity(Complex a) {
     let 2 div(sub(1,1),a);
-    substitute DistributeSub[0->1]:0;
-    substitute Sub.Inverse[0->1]:[0|1,0];
+    substitute DistributeSub:0;
+    substitute Sub.Inverse:[0|1,0];
 
 } result {
     0=div(0,a)

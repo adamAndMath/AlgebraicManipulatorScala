@@ -1,0 +1,11 @@
+import Numbers;
+using base.Add;
+using base.Sub;
+using base.Mult;
+using base.Div;
+
+assume Rec<j,r>((Integer,Complex) -> Complex f, Complex i, Integer n)
+    rec<j,r>(eval(f,j,r),i,n)=eval(f,n,rec<j,r>(eval(f,j,r),i,sub(n,1)));
+
+assume Identity<j,r>((Integer,Complex) -> Complex f, Complex i)
+    rec<j,r>(eval(f,j,r),i,0)=i;

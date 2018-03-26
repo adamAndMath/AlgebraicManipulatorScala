@@ -106,17 +106,24 @@ object ProofReader {
   }
 
   def readSubstitution(tokens: Tokens): Read[Substitute] = {
-    val (path, t1) = tokens.readList(DOT, _.string())
-    val ((from, to), t2) = t1.expect(BRACKETS, t => {
-      val (from, t1) = t.int()
-      val (to, t2) = t1.expect(ARROW).int()
-      ((from, to), t2)
-    })
-    val (dum, t3) = t2.whenBlock(LESSGREAT, _.readList(COMMA, readVariable))
-    val (par, t4) = t3.whenBlock(PARENTHESES, _.readList(COMMA, _.option(DASH, readExp)))
-    val (pos, t5) = readTree(t4.expect(COLON))
+    val (path, (from, to), t1) = if (tokens is Tokens.TILDE) {
+      val (path, t1) = tokens.tail.readList(DOT, _.string())
+      (path, 1->0, t1)
+    } else {
+      val (path, t1) = tokens.readList(DOT, _.string())
+      val (ft, t2) = t1.whenBlock(BRACKETS, t => {
+        val (from, t1) = t.int()
+        val (to, t2) = t1.expect(ARROW).int()
+        ((from, to), t2)
+      })
 
-    (Substitute(pos, Path(path), from, to, dum.getOrElse(List.empty), par), t5)
+      (path, ft.getOrElse(0->1), t2)
+    }
+    val (dum, t2) = t1.whenBlock(LESSGREAT, _.readList(COMMA, readVariable))
+    val (par, t3) = t2.whenBlock(PARENTHESES, _.readList(COMMA, _.option(DASH, readExp)))
+    val (pos, t4) = readTree(t3.expect(COLON))
+
+    (Substitute(pos, Path(path), from, to, dum.getOrElse(List.empty), par), t4)
   }
 
   def readRename(tokens: Tokens): Read[Rename] = {

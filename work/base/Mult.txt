@@ -15,7 +15,7 @@ assume Distribute(Complex f, Complex a, Complex b)
 work DistributeSub(Complex f, Complex a, Complex b) {
     let 2 sub(mult(f,a),mult(f,b));
     substitute Sub.Add1[0->2](-,b):0,0,1;
-    substitute Distribute[0->1]:0,0;
+    substitute Distribute:0,0;
     substitute Sub.Add1[1->0]:0;
 } result {
     mult(f,sub(a,b))=sub(mult(f,a),mult(f,b))
@@ -23,11 +23,11 @@ work DistributeSub(Complex f, Complex a, Complex b) {
 
 work Singularity(Complex a) {
     let 3 0;
-    substitute Sub.Inverse[1->0](a):[1|2];
+    substitute ~Sub.Inverse(a):[1|2];
     substitute Identity[0->1]:[1,[0|1]|2,[0|1]];
-    substitute DistributeSub[1->0]:[1|2];
-    substitute Sub.Inverse[0->1]:[1,1|2,1];
-    substitute Commute[0->1]:1;
+    substitute ~DistributeSub:[1|2];
+    substitute Sub.Inverse:[1,1|2,1];
+    substitute Commute:1;
 } result {
     0=mult(0,a)=mult(a,0)
 }
@@ -36,8 +36,8 @@ work Sub(Complex a) {
     let 3 sub(0,a);
     substitute Singularity[0->2](a):[1,0|2,0];
     substitute Identity[0->1]:[1,1|2,1];
-    substitute DistributeSub[1->0]:[1|2];
-    substitute Commute[0->1]:1;
+    substitute ~DistributeSub:[1|2];
+    substitute Commute:1;
 } result {
     sub(0,a)=mult(sub(0,1),a)=mult(a,sub(0,1))
 }
