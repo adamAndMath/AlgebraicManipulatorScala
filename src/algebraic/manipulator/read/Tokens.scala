@@ -39,8 +39,12 @@ object Tokens {
           } else
             go(Token(pos, line, SLASH, prev), pos + 1, line, code.tail)
         case '\\' => go(Token(pos, line, BACKSLASH, prev), pos + 1, line, code.tail)
-        case '=' => go(Token(pos, line, EQUAL, prev), pos + 1, line, code.tail)
         case '+' => go(Token(pos, line, PLUS, prev), pos + 1, line, code.tail)
+        case '=' =>
+          if (code.tail.head == '>')
+            go(Token(pos, line, IMPLY, prev), pos + 2, line, code.tail.tail)
+          else
+            go(Token(pos, line, EQUAL, prev), pos + 1, line, code.tail)
         case '-' =>
           if (code.tail.head == '>')
             go(Token(pos, line, ARROW, prev), pos + 2, line, code.tail.tail)
@@ -205,8 +209,9 @@ object Tokens {
   case object SEMI extends ProofToken
   case object SLASH extends ProofToken
   case object BACKSLASH extends ProofToken
-  case object EQUAL extends ProofToken
   case object PLUS extends ProofToken
+  case object EQUAL extends ProofToken
+  case object IMPLY extends ProofToken
   case object DASH extends ProofToken
   case object ARROW extends ProofToken
   case object TILDE extends ProofToken

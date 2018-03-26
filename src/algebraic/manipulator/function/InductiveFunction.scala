@@ -2,18 +2,18 @@ package algebraic.manipulator.function
 
 import algebraic.manipulator._
 
-case class InductiveFunction(params: List[Definition], base: InductiveBase, steps: List[InductiveStep]) extends Function {
-  override def paramTypes: List[Type] = params.map(_.varType)
+case class InductiveFunction(header: Header, base: InductiveBase, steps: List[InductiveStep]) extends FunctionElement {
+  override def paramTypes: List[Type] = header.parameters.map(_.varType)
 
   override def dependencies(env: Environment): Set[Path] =
-    env.dependencies(params) ++ env.bind(params).dependencies(base :: steps)
+    env.dependencies(header) ++ header.bind(env).dependencies(base :: steps)
 }
 
-case class InductiveBase(inductives: Map[Variable, Exp], exp: Exp) extends Depending {
-  override def dependencies(env: Environment): Set[Path] = env.dependencies(exp :: inductives.values.toList)
+case class InductiveBase(inductive: Variable, value: Exp, exp: Exp) extends Depending {
+  override def dependencies(env: Environment): Set[Path] = env.dependencies(List(value, exp))
 }
 
-case class InductiveStep(v: Variable, params: List[Definition], exp: Exp) extends Depending {
+case class InductiveStep(params: List[Definition], step: Exp, exp: Exp) extends Depending {
   override def dependencies(env: Environment): Set[Path] =
-    env.dependencies(params) ++ env.bind(params).dependencies(params)
+    env.dependencies(params) ++ env.bind(params).dependencies(List(step, exp))
 }

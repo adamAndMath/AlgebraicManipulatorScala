@@ -17,6 +17,11 @@ object ProofReader {
     ("toeval" -> (readToEval(_: Tokens))) +
     ("fromeval" -> (readFromEval(_: Tokens)))
 
+  var elementReaders: Map[String, Map[String, Tokens => Read[ElementTemplate]]] = Map.empty +
+    ("struct" -> StructureTemplate.readers) +
+    ("object" -> ObjectTemplate.readers) +
+    ("fn" -> FunctionTemplate.readers)
+
   def readTree(tokens: Tokens): Read[Tree] = {
     val (tree, t1) = {
       if (tokens is OPEN_BRAC) readTreeBrac(tokens)
@@ -160,26 +165,16 @@ object ProofReader {
 
   def readElement(tokens: Tokens): Read[(String, ElementTemplate)] = {
     tokens.tail.token match {
-      case STRING("struct") =>
+      case STRING(t) if elementReaders.contains(t) =>
         val (typeName, t1) = tokens.string()
         val (name, t2) = t1.tail.string()
 
-        if (!StructureTemplate.readers.contains(typeName))
-          throw new TokenException(tokens, s"$typeName is not a valid structure type")
+        if (!elementReaders(t).contains(typeName))
+          throw new TokenException(tokens, s"$typeName is not a valid $t type")
 
-        val (structure, t3) = StructureTemplate.readers(typeName)(t2)
+        val (elm, t3) = elementReaders(t)(typeName)(t2)
 
-        ((name, structure), t3)
-      case STRING("object") =>
-        val (typeName, t1) = tokens.string()
-        val (name, t2) = t1.tail.string()
-
-        if (!ObjectTemplate.readers.contains(typeName))
-          throw new TokenException(tokens, s"$typeName is not a valid structure type")
-
-        val (obj, t3) = ObjectTemplate.readers(typeName)(t2)
-
-        ((name, obj), t3)
+        ((name, elm), t3)
       case _ =>
         val (typeName, t1) = tokens.string()
         val (name, t2) = t1.string()

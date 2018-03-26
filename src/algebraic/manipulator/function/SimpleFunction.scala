@@ -2,9 +2,9 @@ package algebraic.manipulator.function
 
 import algebraic.manipulator._
 
-case class SimpleFunction(params: List[Definition], exp: Exp) extends Function {
-  override def paramTypes: List[Type] = params.map(_.varType)
+case class SimpleFunction(header: Header, exp: Exp) extends FunctionElement {
+  override def paramTypes: List[Type] = header.parameters.map(_.varType)
 
   override def dependencies(env: Environment): Set[Path] =
-    env.dependencies(params) ++ env.bind(params).dependencies(exp)
+    env.dependencies(header) ++ header.bind(env).dependencies(exp)
 }

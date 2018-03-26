@@ -68,7 +68,7 @@ object LatexWriter {
     case InductiveStructure(_, _) => true
     case SimpleStructure => false
     case _: ObjectElement => true
-    case _: Function => true
+    case _: FunctionElement => true
     case _: Identity => false
   }
 
@@ -81,6 +81,13 @@ object LatexWriter {
         s"$$${writeDefinition(Header(Nil, base.params))}: ${writeExp(base.exp)} \\in $typeOut$$" +
         steps.map(step => s" and $$${writeDefinition(Header(Nil, Definition(SimpleType(name), step.v.name) :: step.params))}: ${writeExp(step.exp)} \\in $typeOut$$").mkString +
         "\\\\\n"
+    case SimpleFunction(header, exp) => s"Let $$${writeExp(Operation(name, header.dummies, header.parameters.map(_.variable)))} = ${writeExp(exp)}\\\n"
+    case InductiveFunction(header, base, steps) =>
+      s"Let $$${writeExp(Operation(name, header.dummies, header.parameters.map(_.variable)))} = \n" +
+        "  \\begin{cases}\n" +
+        s"    ${base.exp} & \\quad ${base.inductive} = ${base.value}" +
+        s"${steps.map(s => s"\\\\\n    ${s.exp} & \\quad ${s.step}").mkString}" +
+        "\n  \\end{cases}$\\\\\n"
   }
 
   def writeAssumption(assumption: Assumption): String =
