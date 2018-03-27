@@ -1,5 +1,7 @@
 import Numbers
 
+assume fn add(Complex, Complex)
+
 assume Commute(Complex a, Complex b)
     add(a,b)=add(b,a);
 

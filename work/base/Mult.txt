@@ -1,5 +1,7 @@
 import Numbers
 
+assume fn mult(Complex, Complex)
+
 assume Identity(Complex a)
     a=mult(a,1)=mult(1,a);
 

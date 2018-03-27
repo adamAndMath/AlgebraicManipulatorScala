@@ -1,5 +1,7 @@
 import Numbers
 
+assume fn sub(Complex a, Complex b)
+
 assume Add1(Complex a, Complex b)
     a=sub(add(a,b),b)=add(sub(a,b),b);
 

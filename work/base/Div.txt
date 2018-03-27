@@ -1,5 +1,7 @@
 import Numbers
 
+assume div(Complex, Complex)
+
 assume Mult1(Complex a, Complex b)
     a=div(mult(a,b),b)=mult(div(a,b),b);
 

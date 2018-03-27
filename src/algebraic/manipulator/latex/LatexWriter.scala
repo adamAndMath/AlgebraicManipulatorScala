@@ -43,16 +43,22 @@ object LatexWriter {
   def writeFile(project: Project, file: WorkFile): String = {
     val env = file.env(project)
 
+    val assumptions = file.names.filter(file.get(_).isInstanceOf[Assumption])
+
     s"\\chapter{${file.path.last}}\n" +
       file.names.filter(n => isDefinition(file.get(n))).map(name =>
         writeElementDefinition(name, file.get(name))
       ).mkString +
-      "Given the following assumptions:\n" +
-      file.names.filter(file.get(_).isInstanceOf[Assumption]).map(name =>
-        "\\\\\n" +
-          s"\\label{${(file.path + name).mkString(":")}}\n" +
-          writeAssumption(file.get(name).asInstanceOf[Assumption])
-      ).mkString +
+      {
+        if (assumptions.nonEmpty)
+          "Given the following assumptions:\n" +
+            assumptions.map(name =>
+              "\\\\\n" +
+                s"\\label{${(file.path + name).mkString(":")}}\n" +
+                writeAssumption(file.get(name).asInstanceOf[Assumption])
+            ).mkString
+        else ""
+      } +
       file.names
         .filterNot(file.get(_).isInstanceOf[Assumption])
         .filterNot(n => isDefinition(file.get(n)))
@@ -74,7 +80,7 @@ object LatexWriter {
 
   def writeElementDefinition(name: String, element: Element): String = element match {
     case AssumedObject => s"Let $name be an object\\\\\n"
-    case SimpleObject(exp) => s"Let $$${writeExp(Variable(name))} = ${writeExp(exp)}$$"
+    case SimpleObject(exp) => s"Let $$${writeExp(Variable(name))} = ${writeExp(exp)}$$\\\\\n"
     case InductiveStructure(base, steps) =>
       val typeOut = writeType(SimpleType(name))
       s"Let $$$typeOut$$ be the smallest set that satisfies " +
@@ -151,6 +157,8 @@ object LatexWriter {
       positions :: (parameters.indices zip parameters.map(_.positions)).map{case (i, p) => p.map(_ :> colors(i)).getOrElse(PathTree.empty)}.fold(PathTree.empty)(_|_)
     case FromEval(positions) => positions :> colors.head
     case Rename(positions, _, _) => positions :> colors.head
+    case Wrap(Variable(_), positions) => positions :> colors.head
+    case Unwrap(positions) => positions :> colors.head
   }
 
   def getOutputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
@@ -165,6 +173,8 @@ object LatexWriter {
           | parameters.indices.map(i => Tree.edge(i+1) :> colors(i)).fold(PathTree.empty)(_|_))
     case FromEval(positions) => positions :> colors.head
     case Rename(positions, _, _) => positions :> colors.head
+    case Wrap(Variable(_), positions) => positions :> colors.head
+    case Unwrap(positions) => positions :> colors.head
   }
 
   def writeManipulation(env: Environment, manipulation: Manipulation): String = manipulation match {
@@ -175,6 +185,10 @@ object LatexWriter {
     case ToEval(_, _) => "Convert to function call"
     case FromEval(_) => "Convert from function call"
     case Rename(_, from, to) => s"Renaming $from to $to"
+    case Wrap(Variable(name), _) => env(Path(name)) match {
+      case SimpleObject(exp) => writeIdentityReference(env.toFull(Path(name)), Header(Nil, Nil), List(Variable(name), exp))
+    }
+    case Unwrap(_) => "Unwrapping"
   }
 
   def writeIdentityReference(path: Path, header: Header, exps: List[Exp]): String = {

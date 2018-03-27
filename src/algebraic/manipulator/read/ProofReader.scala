@@ -15,7 +15,9 @@ object ProofReader {
     ("substitute" -> (readSubstitution(_: Tokens))) +
     ("rename" -> (readRename(_: Tokens))) +
     ("toeval" -> (readToEval(_: Tokens))) +
-    ("fromeval" -> (readFromEval(_: Tokens)))
+    ("fromeval" -> (readFromEval(_: Tokens))) +
+    ("wrap" -> (readWrap(_: Tokens))) +
+    ("unwrap" -> (readUnwrap(_: Tokens)))
 
   var elementReaders: Map[String, Map[String, Tokens => Read[ElementTemplate]]] = Map.empty +
     ("struct" -> StructureTemplate.readers) +
@@ -154,6 +156,18 @@ object ProofReader {
   def readFromEval(tokens: Tokens): Read[FromEval] = {
     val (pos, tail) = readTree(tokens.expect(COLON))
     (FromEval(pos), tail)
+  }
+
+  def readWrap(tokens: Tokens.Tokens): Read[Wrap] = {
+    val (exp, t1) = readExp(tokens)
+    val (pos, t2) = readTree(t1.expect(COLON))
+
+    (Wrap(exp, pos), t2)
+  }
+
+  def readUnwrap(tokens: Tokens.Tokens): Read[Unwrap] = {
+    val (pos, tail) = readTree(tokens.expect(COLON))
+    (Unwrap(pos), tail)
   }
 
   def readHeader(tokens: Tokens): Read[Header] = {

@@ -7,8 +7,10 @@ using base.Div;
 using base.Pow;
 using base.Log;
 
+define diff(Complex -> Complex f) = func<x>(lim<h>(0,div(sub(eval(f,add(x,h)),eval(f,x)),h)))
+
 assume Lim<h>(Complex -> Complex f, Complex x)
-    diff(eval(f,x),x)=lim<h>(0,div(sub(eval(f,add(x,h)),eval(f,x)),h));
+    diff(eval(f,x),x) = lim<h>(0,div(sub(eval(f,add(x,h)),eval(f,x)),h));
 
 work Factor(Complex -> Complex f, Complex a, Complex x) {
     let 2 diff(mult(a,eval(f,x)),x);
@@ -202,7 +204,7 @@ work Ln(Complex x) {
 	substitute Lim.Func[0->2]<h>:1,0,0;
 	fromeval:1,0,0,[0|1];
 	substitute ~Div.Singularity:1,0,0,0;
-	substitute ~Euler<h>:1,0,0;
+	wrap e:1,0,0;
 	substitute Ln.Inverse:1,0;
 } result {
 	diff(ln(x),x)=div(1,x)

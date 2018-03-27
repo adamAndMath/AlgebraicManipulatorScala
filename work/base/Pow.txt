@@ -1,5 +1,7 @@
 import Numbers
 
+assume pow(Complex, Complex)
+
 assume Definition(Complex a, Complex n, Complex m)
     pow(a,add(n,m))=mult(pow(a,n),pow(a,m));
 

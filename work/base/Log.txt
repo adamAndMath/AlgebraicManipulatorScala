@@ -1,6 +1,8 @@
 import Numbers
 
 assume Pow(Complex a, Complex b)
+
+assume Pow(Complex a, Complex b)
 	b=log(a,pow(a,b))=pow(a,log(a,b));
 
 work Inverse(Complex a) {
