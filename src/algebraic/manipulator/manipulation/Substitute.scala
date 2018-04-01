@@ -16,33 +16,20 @@ case class Substitute(positions: Tree, path: Path, from: Int, to: Int, dummies: 
       throw new IllegalStateException("Parameter count does't match referred work")
 
     val fromExp = identity.result(from)
-    val dummy = fromExp.getBound
-    val tree: PathTree[Variable] = fromExp.tree.filter(!dummy.contains(_))
 
-    var pars: Map[Variable, Exp] = (identity.header.parameters.map(_.variable) zip params).toMap.filter{case (_, p) => p.nonEmpty}.mapValues(_.get)
+    try {
+      val pars = fromExp.matchExp(exp, (identity.header.parameters.map(_.variable) zip params).toMap)
+        .getOrElse(throw new IllegalStateException(s"Expected substitute of $fromExp, but received $exp"))
+        .map{ case (p, o) => p -> o.getOrElse(throw new IllegalStateException(s"Undefined parameter $p in $exp"))}
 
-    if (tree.nonEmpty) {
-      try {
-        exp.get(tree).foreach{ case (p, e) =>
-          if (!pars.contains(p))
-            pars += (p -> e)
-          else if (pars(p) != e)
-            throw new IllegalStateException(s"Expected parameter ${pars(p)}, but received $e")
-        }
-      } catch {
-        case e: Exception => throw new IllegalStateException(s"Expected substitute of $fromExp, but received $exp", e)
-      }
+      val fromSet = fromExp.setAll((identity.header.dummies zip dummies).toMap, pars)
+
+      if (fromSet != exp)
+        throw new IllegalStateException(s"Expected $fromSet, but received $exp")
+
+      identity.result(to).setAll((identity.header.dummies zip dummies).toMap, pars)
+    } catch {
+      case e: Exception => throw new IllegalArgumentException(s"Expected substitute of $fromExp, but received $exp", e)
     }
-
-    for (par <- identity.header.parameters.map(_.variable))
-      if (!pars.contains(par))
-        throw new IllegalStateException(s"Undefined parameter $par ${exp.get(tree)}")
-
-    val fromSet = fromExp.setAll((identity.header.dummies zip dummies).toMap, pars)
-
-    if (fromSet != exp)
-      throw new IllegalStateException(s"Expected $fromSet, but received $exp")
-
-    identity.result(to).setAll((identity.header.dummies zip dummies).toMap, v => pars.getOrElse(v, v))
   }
 }

@@ -18,14 +18,14 @@ object FunctionTemplate {
   def readAssumption(tokens: Tokens.Tokens): Read[AssumedFunctionTemplate] = {
     val (params, tail) = tokens.expect(PARENTHESES, _.readList(COMMA, readType))
 
-    (AssumedFunctionTemplate(params), tail)
+    (AssumedFunctionTemplate(params), tail.ignore(SEMI))
   }
 
   def readDefine(tokens: Tokens.Tokens): Read[SimpleFunctionTemplate] = {
     val (header, t1) = readHeader(tokens)
-    val (exp, t2) = readExp(t1)
+    val (exp, t2) = readExp(t1.expect(EQUAL))
 
-    (SimpleFunctionTemplate(header, exp), t2)
+    (SimpleFunctionTemplate(header, exp), t2.ignore(SEMI))
   }
 
   def readInductive(tokens: Tokens.Tokens): Read[InductiveFunctionTemplate] = {

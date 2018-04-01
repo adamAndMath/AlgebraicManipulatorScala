@@ -103,7 +103,7 @@ object IdentityTemplate {
     }
 
     override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(header) ++ header.bind(env).dependencies(manipulations)
+      env.dependencies(header) ++ header.bindWithDummies(env).dependencies(manipulations)
   }
 
   case class InductionProofTemplate(header: Header, result: List[Exp], base: InductiveBaseTemplate, steps: List[InductiveStepTemplate]) extends IdentityTemplate {
@@ -121,7 +121,7 @@ object IdentityTemplate {
     }
 
     override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(header) ++ header.bind(env).dependencies(base :: steps)
+      env.dependencies(header) ++ header.bindWithDummies(env).dependencies(base :: steps)
   }
 
   case class InductiveBaseTemplate(inductives: Map[Variable, Exp], count: Int, origin: Exp, manipulations: List[Manipulation]) extends Depending {

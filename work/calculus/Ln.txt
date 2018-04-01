@@ -1,8 +1,14 @@
-import Numbers
-import calculus.Euler
+import Numbers.Complex
+import base.Add.add
+import base.Sub.sub
+import base.Mult.mult
+import base.Div.div
+import base.Pow.pow
+import base.Log.log
+import calculus.Euler.e
 using base.Log
 
-define ln(Complex a) = log(e, a);
+define fn ln(Complex a) = log(e, a);
 
 work Pow(Complex a) {
 	let 3 a;

@@ -10,6 +10,7 @@ case class Header(dummies: List[Variable], parameters: List[Definition]) extends
     else s"<${dummies.mkString(",")}(${parameters.mkString(",")})>"
 
   def bind(env: Environment): Environment = env.bind(parameters)
+  def bindWithDummies(env: Environment):Environment = env.bind(parameters).bind(dummies.map(_.name).toSet)
 }
 
 abstract class Identity(val header: Header, val result: List[Exp]) extends Element {
@@ -35,7 +36,7 @@ class Proof(header: Header, result: List[Exp], val count: Int, val origin: Exp) 
   override def validate(): Boolean = (cur zip result).forall(p => p._1 == p._2)
 
   override def dependencies(env: Environment): Set[Path] =
-    env.dependencies(header) ++ header.bind(env).dependencies(origin :: result ++ manips)
+    env.dependencies(header) ++ header.bindWithDummies(env).dependencies(origin :: result ++ manips)
 
   def apply(env: Environment, manipulation: Manipulation): Unit = {
     cur = manipulation(env, cur)
@@ -72,7 +73,7 @@ class AssumedProof(header: Header, result: List[Exp], val origin: List[Exp]) ext
 }
 
 class InductionProof(header: Header, result: List[Exp], val inductives: Map[Variable, Exp], count: Int, origin: Exp) extends Identity(header, result) {
-  val base: Proof = new Proof(header, result.map(e => e.set(v => inductives.getOrElse(v, v))), count, origin)
+  val base: Proof = new Proof(header, result.map(_.set(inductives)), count, origin)
   private var steps: Map[Variable, List[InductiveStep]] = inductives.map(_._1 -> Nil)
 
   def apply(v: Variable): List[InductiveStep] = steps(v)
@@ -92,7 +93,7 @@ class InductionProof(header: Header, result: List[Exp], val inductives: Map[Vari
   override def validate(): Boolean = base.validate() && steps.values.forall(_.forall(_.proof.validate()))
 
   override def dependencies(env: Environment): Set[Path] =
-    env.dependencies(header) ++ header.bind(env).dependencies(base :: origin :: result ++ inductives.values ++ steps.values.flatten)
+    env.dependencies(header) ++ header.bindWithDummies(env).dependencies(base :: origin :: result ++ inductives.values ++ steps.values.flatten)
 }
 
 sealed abstract class InductiveStep(header: Header, result: List[Exp], val inductives: Map[Variable, Exp], v: Variable, val params: List[Definition], val exp: Exp) extends Depending {
@@ -107,13 +108,13 @@ sealed abstract class InductiveStep(header: Header, result: List[Exp], val induc
 class InductiveAssumedStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp)
   extends InductiveStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp) {
   override val proof: AssumedProof =
-    new AssumedProof(Header(header.dummies, header.parameters ++ params), result.map(_.set(u => if (u != v) u else exp)), result)
+    new AssumedProof(Header(header.dummies, header.parameters ++ params), result.map(_.set(v -> exp)), result)
 }
 
 class InductiveProofStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp, count: Int, origin: Exp)
   extends InductiveStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp) {
   override val proof: Proof =
-    new Proof(Header(header.dummies, header.parameters ++ params), result.map(_.set(u => if (u != v) u else exp)), count, origin)
+    new Proof(Header(header.dummies, header.parameters ++ params), result.map(_.set(v -> exp)), count, origin)
 
   override def dependencies(env: Environment): Set[Path] = super.dependencies(env) ++ env.bind(params).dependencies(origin)
 }

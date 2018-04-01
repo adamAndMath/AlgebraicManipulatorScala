@@ -15,6 +15,12 @@ object LatexWriter {
   var typeNames = Map.empty[String, String]
   var colors = List("red", "blue", "olive", "orange", "yellow")
 
+  sealed trait ElementLocation
+  case object AssumptionLocation extends ElementLocation
+  case object DefinitionLocation extends ElementLocation
+  case object ProofLocation extends ElementLocation
+  case object IgnoredLocation extends ElementLocation
+
   def apply(project: Project, title: String, author: String): String = {
     def getFiles(sub: Project, path: Path): List[WorkFile] = sub match {
       case f: Project.Folder =>
@@ -43,26 +49,24 @@ object LatexWriter {
   def writeFile(project: Project, file: WorkFile): String = {
     val env = file.env(project)
 
-    val assumptions = file.names.filter(file.get(_).isInstanceOf[Assumption])
+    val assumptions = file.names.filter(n => getLocation(file.get(n)) == AssumptionLocation)
 
     s"\\chapter{${file.path.last}}\n" +
-      file.names.filter(n => isDefinition(file.get(n))).map(name =>
-        writeElementDefinition(name, file.get(name))
-      ).mkString +
+      file.names.filter(n => getLocation(file.get(n)) == DefinitionLocation).map(name =>
+        writeElementDefinition(name, file.get(name)) + "\n"
+      ).mkString("\\") +
       {
         if (assumptions.nonEmpty)
           "Given the following assumptions:\n" +
             assumptions.map(name =>
               "\\\\\n" +
                 s"\\label{${(file.path + name).mkString(":")}}\n" +
-                writeAssumption(file.get(name).asInstanceOf[Assumption])
+                writeAssumption(file.get(name))
             ).mkString
         else ""
       } +
       file.names
-        .filterNot(file.get(_).isInstanceOf[Assumption])
-        .filterNot(n => isDefinition(file.get(n)))
-        .filterNot(file.get(_) == SimpleStructure)
+        .filter(n => getLocation(file.get(n)) == ProofLocation)
         .map(name => {
         s"\\section{$name}\n" +
           s"\\label{${(file.path + name).mkString(":")}}\n" +
@@ -70,34 +74,37 @@ object LatexWriter {
       }).mkString
   }
 
-  def isDefinition(element: Element): Boolean = element match {
-    case InductiveStructure(_, _) => true
-    case SimpleStructure => false
-    case _: ObjectElement => true
-    case _: FunctionElement => true
-    case _: Identity => false
+  def getLocation(element: Element): ElementLocation = element match {
+    case _: Assumption => AssumptionLocation
+    case _: AssumedFunction => IgnoredLocation
+    case SimpleStructure => IgnoredLocation
+    case InductiveStructure(_, _) => DefinitionLocation
+    case _: ObjectElement => DefinitionLocation
+    case _: FunctionElement => DefinitionLocation
+    case _: Identity => ProofLocation
   }
 
   def writeElementDefinition(name: String, element: Element): String = element match {
-    case AssumedObject => s"Let $name be an object\\\\\n"
-    case SimpleObject(exp) => s"Let $$${writeExp(Variable(name))} = ${writeExp(exp)}$$\\\\\n"
+    case AssumedObject => s"Let $name be an object"
+    case SimpleObject(exp) => s"Let $$${writeExp(Variable(name))} = ${writeExp(exp)}$$"
     case InductiveStructure(base, steps) =>
       val typeOut = writeType(SimpleType(name))
       s"Let $$$typeOut$$ be the smallest set that satisfies " +
         s"$$${writeDefinition(Header(Nil, base.params))}: ${writeExp(base.exp)} \\in $typeOut$$" +
-        steps.map(step => s" and $$${writeDefinition(Header(Nil, Definition(SimpleType(name), step.v.name) :: step.params))}: ${writeExp(step.exp)} \\in $typeOut$$").mkString +
-        "\\\\\n"
-    case SimpleFunction(header, exp) => s"Let $$${writeExp(Operation(name, header.dummies, header.parameters.map(_.variable)))} = ${writeExp(exp)}\\\n"
+        steps.map(step => s" and $$${writeDefinition(Header(Nil, Definition(SimpleType(name), step.v.name) :: step.params))}: ${writeExp(step.exp)} \\in $typeOut$$").mkString
+    case SimpleFunction(header, exp) => s"Let $$${writeExp(Operation(Variable(name), header.parameters.map(_.variable)))} = ${writeExp(exp)}$$"
     case InductiveFunction(header, base, steps) =>
-      s"Let $$${writeExp(Operation(name, header.dummies, header.parameters.map(_.variable)))} = \n" +
+      s"Let $$${writeExp(Operation(Variable(name), header.parameters.map(_.variable)))} = \n" +
         "  \\begin{cases}\n" +
         s"    ${base.exp} & \\quad ${base.inductive} = ${base.value}" +
         s"${steps.map(s => s"\\\\\n    ${s.exp} & \\quad ${s.step}").mkString}" +
-        "\n  \\end{cases}$\\\\\n"
+        "\n  \\end{cases}$"
   }
 
-  def writeAssumption(assumption: Assumption): String =
-    s"$$${writeDefinition(assumption.header)}: ${assumption.result.map(writeExp(_)).mkString("=")}$$"
+  def writeAssumption(element: Element): String = element match {
+    case a: Assumption => s"$$${writeDefinition(a.header)}: ${a.result.map(writeExp(_)).mkString("=")}$$"
+  }
+
 
   def writeElement(env: Environment, element: Element): String = element match {
     case p: Proof =>
@@ -153,11 +160,8 @@ object LatexWriter {
       val identity = env(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(from).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
-    case ToEval(positions, parameters) =>
-      positions :: (parameters.indices zip parameters.map(_.positions)).map{case (i, p) => p.map(_ :> colors(i)).getOrElse(PathTree.empty)}.fold(PathTree.empty)(_|_)
-    case FromEval(positions) => positions :> colors.head
     case Rename(positions, _, _) => positions :> colors.head
-    case Wrap(Variable(_), positions) => positions :> colors.head
+    case Wrap(_, positions) => positions :> colors.head
     case Unwrap(positions) => positions :> colors.head
   }
 
@@ -167,13 +171,8 @@ object LatexWriter {
       val identity = env(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(to).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
-    case ToEval(positions, parameters) =>
-      positions ::
-        (Tree.edge(0, 0) :: (parameters.indices zip parameters.map(_.positions)).map{case (i, p) => p.map(_ :> colors(i)).getOrElse(PathTree.empty)}.fold(PathTree.empty)(_|_)
-          | parameters.indices.map(i => Tree.edge(i+1) :> colors(i)).fold(PathTree.empty)(_|_))
-    case FromEval(positions) => positions :> colors.head
     case Rename(positions, _, _) => positions :> colors.head
-    case Wrap(Variable(_), positions) => positions :> colors.head
+    case Wrap(_, positions) => positions :> colors.head
     case Unwrap(positions) => positions :> colors.head
   }
 
@@ -182,12 +181,13 @@ object LatexWriter {
     case Substitute(_, path, from, to, _, _) =>
       val identity = env(path).asInstanceOf[Identity]
       writeIdentityReference(env.toFull(path), identity.header, List(from, to).map(identity.result))
-    case ToEval(_, _) => "Convert to function call"
-    case FromEval(_) => "Convert from function call"
     case Rename(_, from, to) => s"Renaming $from to $to"
     case Wrap(Variable(name), _) => env(Path(name)) match {
       case SimpleObject(exp) => writeIdentityReference(env.toFull(Path(name)), Header(Nil, Nil), List(Variable(name), exp))
+      case SimpleFunction(header, exp) => writeIdentityReference(env.toFull(Path(name)), header, List(Operation(Variable(name), header.parameters.map(_.variable)), exp))
     }
+    case Wrap(Lambda(params, e), _) =>
+      s"Wrapping $$${params.map(writeExp(_)).mkString("(", ", ", ")")} \\rightarrow ${writeExp(e)}$$"
     case Unwrap(_) => "Unwrapping"
   }
 
@@ -219,25 +219,34 @@ object LatexWriter {
     else if (backColor.isLeaf)
       colorBack(backColor.asInstanceOf[PathTree.Leaf[String]].leaf, writeExp(exp, textColor, PathTree.empty, binding))
     else {
-      if (!exp.isInstanceOf[Operation] && (textColor.nonEmpty || backColor.nonEmpty))
-        throw new IllegalArgumentException(s"Trees must be empty $exp $textColor $backColor")
-
       exp match {
-        case op @ Operation(name, _, _) =>
+        case op @ Operation(Variable(name), _) =>
           if (operationWriters.contains(name))
             operationWriters(name)(op, textColor, backColor, binding)
           else
             defaultWriter(op, textColor, backColor, binding)
-        case Variable(name) => name
-        case IntVal(v) => v.toString
+        case op: Operation => defaultWriter(op, textColor, backColor, binding)
+        case Variable(name) =>
+          if (textColor.nonEmpty || backColor.nonEmpty)
+            throw new IllegalArgumentException(s"Trees must be empty $exp $textColor $backColor")
+          name
+        case IntVal(v) =>
+          if (textColor.nonEmpty || backColor.nonEmpty)
+            throw new IllegalArgumentException(s"Trees must be empty $exp $textColor $backColor")
+          v.toString
+        case Lambda(params, e) =>
+          if (binding > 0)
+            s"\\left(${params.map(writeExp(_)).mkString(", ")} \\rightarrow ${writeExp(e, textColor(0), backColor(0))}\\right)"
+          else
+            s"${params.map(writeExp(_)).mkString(", ")} \\rightarrow ${writeExp(e, textColor(0), backColor(0))}"
       }
     }
   }
 
   def defaultWriter(op: Operation, textColor: PathTree[String], backColor: PathTree[String], binding: Int): String = {
-    val dummies = if (op.dummies.nonEmpty) s"\\left<${op.dummies.mkString(",")}\\right>" else ""
+    val func = writeExp(op.op, textColor(-1), backColor(-1))
     val parameters = (op.parameters.indices zip op.parameters).map { case (i, exp) => writeExp(exp, textColor(i), backColor(i)) }.mkString(",")
-    s"${op.name}$dummies\\left($parameters\\right)"
+    s"$func\\left($parameters\\right)"
   }
 
   def colorText(color: Option[String], toColor: String): String = if (color.isEmpty) toColor else colorText(color.get, toColor)

@@ -2,7 +2,7 @@ package algebraic.manipulator.read
 
 import algebraic.manipulator._
 
-case class FileTemplate(path: Path, using: Map[String, Path], imports: Set[Path], identities: List[(String, ElementTemplate)]) {
+case class FileTemplate(path: Path, using: Map[String, Path], imports: Map[String, Path], identities: List[(String, ElementTemplate)]) {
   class FileEnvironment(private val project: ProjectTemplate, private val file: FileTemplate) extends Environment {
     override val path: Path = file.path
 
@@ -10,7 +10,7 @@ case class FileTemplate(path: Path, using: Map[String, Path], imports: Set[Path]
 
     override def toFull(path: Path): Path = path match {
       case Path(name) if file.contains(name) => file.path + name
-      case Path(name) => imports.find(project.getFile(_).contains(name)).map(_ + name).getOrElse(throw new IllegalArgumentException(s"$name is not defined in ${file.path}"))
+      case Path(name) if imports.contains(name) => imports(name)
       case Path(f, name) if using.contains(f) => using(f) + name
       case Path(f, name) =>
         val p = file.path.parent + f
@@ -24,15 +24,18 @@ case class FileTemplate(path: Path, using: Map[String, Path], imports: Set[Path]
 
   def contains(name: String): Boolean = identities.exists(_._1 == name)
 
-  def dependencies(project: ProjectTemplate): Set[Path] = {
-    new FileEnvironment(project, this).dependencies(identities.map(_._2)) ++ imports ++ using.values
-  }
+  def dependencies(project: ProjectTemplate): Set[Path] =
+    try {
+      new FileEnvironment(project, this).dependencies(identities.map(_._2)) ++ imports.values ++ using.values
+    } catch {
+      case e: Exception  => throw new IllegalStateException(s"Missing dependencies for $path", e)
+    }
 
   def apply(project: Project): WorkFile = {
     try {
       val file = new WorkFile(path)
       using.foreach { case (k, p) => file.use(k, p) }
-      imports.foreach(file.importing)
+      imports.foreach { case (k, p) => file.importing(k, p) }
       identities.foreach {
         case (name, ide) =>
           try {

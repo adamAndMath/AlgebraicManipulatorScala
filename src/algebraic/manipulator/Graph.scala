@@ -7,7 +7,7 @@ object Graph {
     val lookup = map.map{case (k, t) => k -> new Node(k -> t)}
 
     for (n <- lookup.values) {
-      n.edges = edges(n.prod._1, n.prod._2).map(lookup)
+      n.edges = edges(n.prod._1, n.prod._2).map(p => try{lookup(p)} catch {case e: Throwable => throw new IllegalArgumentException(s"Missing dependency $p for ${n.prod}", e)})
       n.edges.foreach(e => e.invEdges += n)
     }
 

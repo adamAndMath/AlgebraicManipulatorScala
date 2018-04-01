@@ -1,4 +1,11 @@
-import Numbers;
+import Numbers.Complex;
+import Numbers.Integer;
+import base.Add.add;
+import base.Sub.sub;
+import base.Mult.mult;
+import base.Div.div;
+import base.Pow.pow;
+import rec.Sum.sum
 using base.Add;
 using base.Sub;
 using base.Mult;
@@ -6,40 +13,39 @@ using base.Div;
 using base.Pow;
 
 work GeometricSum<i>(Complex a, Integer n) {
-    let 2 sum<i>(pow(a,i),0,n);
-    substitute Sub.Add1[0->2](-,1):1,0,1;
-    substitute Add.Commute:1,0,1;
-    substitute Pow.Definition:1,0;
-    toeval(k:[1,0]):1,0,1;
-    substitute ~Sum.Factor<i>:1;
-    fromeval:1,1,0;
-    substitute Sub.Add1[0->2](-,1):1,1,[1|2];
-    toeval(k:[1]):1,1,0;
-    substitute ~Sum.IndexShift<i>:1,1;
-    substitute Sum.Rec2<i>:1,1;
-    fromeval:1,1,0;
-    substitute Sub.Add1[2->0]:1,1,1,1;
-    substitute Mult.Distribute:1;
-    substitute ~Pow.Definition:1,0;
-    substitute ~Sub.Add2:1,0,1;
-    substitute Sub.Inverse:1,0,1;
-    substitute Pow.Singularity:1,0;
-    substitute Sub.Add1[0->1](-,pow(a,n)):1,1,1;
-    toeval(k:[1]):1,1,1,0,1;
-    substitute ~Sum.Rec<i>:1,1,1,0;
-    fromeval:1,1,1,0,0;
+    let 2 sum(i -> pow(a,i),0,n)
+    substitute ~Sub.AddSub(-,1):1,0,0,1
+    substitute Add.Commute:1,0,0,1
+    substitute Pow.Definition:1,0,0
+    wrap i -> pow(a,sub(i,1)):1,0,0,1
+    substitute ~Sum.Factor<i>:1
+    substitute ~Sub.AddSub(-,1):1,1,[1|2]
+    wrap i -> pow(a,i):1,1,0,0
+    substitute ~Sum.IndexShift<i>:1,1
+    substitute Sum.PredLeft:1,1
+    unwrap:1,1,0
+    substitute Mult.Distribute:1
+    substitute ~Pow.Definition:1,0
+    substitute ~Sub.AsAdd:1,0,1
+    substitute Sub.Inverse:1,0,1
+    substitute Pow.Singularity:1,0
+    substitute ~Sub.SubAdd(-,pow(a,n)):1,1,1
+    substitute ~Sub.AddSub(-,1):1,1,1,0,1,1
+    wrap i -> pow(a,i):1,1,1,0,1
+    substitute ~Sum.SuccRight:1,1,1,0
+    substitute Sub.AddSub:1,1,1,0,2
     substitute Mult.DistributeSub:1,1;
     substitute Pow.Identity:1,1,0,0;
     substitute ~Pow.Definition:1,1,1;
     substitute Add.Commute:1,1,1,1;
     substitute Sub.Commute2[1->2]:1;
-    call x sub(x,mult(a,sum<i>(pow(a,i),0,n)));
-    substitute Sub.Add1[1->0]:1;
+    call x sub(x,mult(a,sum(i -> pow(a,i),0,n)));
+    substitute Sub.SubAdd:1;
     substitute Mult.Commute:0,1;
-    substitute Mult.Identity[0->1]:0,0;
+    substitute ~Mult.IdentityRight:0,0;
     substitute ~Mult.DistributeSub:0;
     call x div(x,sub(1,a));
-    substitute Div.Mult1[1->0]:0;
+    substitute Div.DivMult:0;
 } result {
-    sum<i>(pow(a,i),0,n)=div(sub(1,pow(a,add(n,1))),sub(1,a))
+    sum(i -> pow(a,i),0,n)=div(sub(1,pow(a,add(n,1))),sub(1,a))
 }

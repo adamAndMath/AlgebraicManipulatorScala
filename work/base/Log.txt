@@ -1,6 +1,11 @@
-import Numbers
+import Numbers.Complex
+import base.Add.add
+import base.Sub.sub
+import base.Mult.mult
+import base.Div.div
+import base.Pow.pow
 
-assume Pow(Complex a, Complex b)
+assume fn log(Complex, Complex)
 
 assume Pow(Complex a, Complex b)
 	b=log(a,pow(a,b))=pow(a,log(a,b));
@@ -51,7 +56,7 @@ work Mult(Complex a, Complex b, Complex p) {
 
 work ChangeBase(Complex a, Complex b, Complex c) {
     let 2 log(a,b);
-    substitute Div.Mult1[0->1](-,log(c,a)):1;
+    substitute ~Div.DivMult(-,log(c,a)):1;
     substitute Mult.Commute:1,0;
     substitute Mult[1->0]:1,0;
     substitute Pow[2->0]:1,0,1;

@@ -56,6 +56,8 @@ object Tokens {
             prev match {
               case Token(p, l, STRING(s), pre) if p + s.length == pos && l == line =>
                 go(Token(p, l, STRING(s + num), pre), pos + num.length, line, code.drop(num.length))
+              case Token(p, l, DASH, pre) if p + 1 == pos && l == line =>
+                go(Token(p, l, INT(-num.toInt), pre), pos + num.length, line, code.drop(num.length))
               case _ => go(Token(pos, line, INT(num.toInt), prev), pos + num.length, line, code.drop(num.length))
             }
           } else {
@@ -146,7 +148,7 @@ object Tokens {
           val (e, t1) = reader(tokens)
           wm(t1, e :: acc)
         }
-        else (acc.reverse, this)
+        else (acc.reverse, tokens)
       wm(this, Nil)
     }
 

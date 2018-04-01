@@ -14,8 +14,6 @@ object ProofReader {
     ("call" -> (readCall(_: Tokens))) +
     ("substitute" -> (readSubstitution(_: Tokens))) +
     ("rename" -> (readRename(_: Tokens))) +
-    ("toeval" -> (readToEval(_: Tokens))) +
-    ("fromeval" -> (readFromEval(_: Tokens))) +
     ("wrap" -> (readWrap(_: Tokens))) +
     ("unwrap" -> (readUnwrap(_: Tokens)))
 
@@ -50,19 +48,35 @@ object ProofReader {
   def readExp(tokens: Tokens): Read[Exp] = tokens.token match {
     case INT(_) => readInt(tokens)
     case STRING(_) =>
-      if (tokens.tail.is(OPEN_PAR) || tokens.tail.is(LESS))
-        readOperation(tokens)
-      else
-        readVariable(tokens)
+      val (v, t1) = readVariable(tokens)
+      if (t1 is ARROW) {
+        val (e, t2) = readExp(t1.tail)
+        (Lambda(List(v), e), t2)
+      } else if (t1 is OPEN_PAR) {
+        val (calls, t2) = t1.whileMatch(OPEN_PAR, _.expect(PARENTHESES, _.readList(COMMA, readExp)))
+        (((v: Exp) /: calls)(Operation), t2)
+      } else  (v, t1)
+
+    case OPEN_PAR =>
+      val (exp, t1) = readExp(tokens.tail)
+
+      if (t1 is COMMA) {
+        val (pars, t2) = tokens.expect(PARENTHESES, _.readList(COMMA, readVariable))
+        val (e, t3) = readExp(t2.expect(ARROW))
+        (Lambda(pars, e), t3)
+      } else if (t1 is CLOSE_PAR) {
+        val (calls, t2) = t1.tail.whileMatch(OPEN_PAR, _.expect(PARENTHESES, _.readList(COMMA, readExp)))
+        ((exp /: calls)(Operation), t2)
+      } else (exp, t1)
+
     case _ => throw new UnexpectedTokenException(tokens, STRING("abc"))
   }
 
   def readOperation(tokens: Tokens): Read[Operation] = {
     val (name, t1) = tokens.string()
-    val (dum, t2) = t1.whenBlock(LESSGREAT, _.readList(COMMA, readVariable))
-    val (par, t3) = t2.readList(COMMA, PARENTHESES, readExp)
+    val (par, t2) = t1.readList(COMMA, PARENTHESES, readExp)
 
-    (Operation(name, dum.getOrElse(List.empty), par), t3)
+    (Operation(Variable(name), par), t2)
   }
 
   def readVariable(tokens: Tokens): Read[Variable] = {
@@ -141,23 +155,6 @@ object ProofReader {
     (Rename(pos, from, to), t3)
   }
 
-  def readToEval(tokens: Tokens): Read[ToEval] = {
-    val (params, t1) = tokens.readList(COMMA, PARENTHESES, tokens => {
-      val (v, t1) = readVariable(tokens)
-      val (e, t2) = t1.when(EQUAL, readExp)
-      val (p, t3) = t2.when(COLON, readTreeBrac)
-      (ToEval.Parameter(v, e, p), t3)
-    })
-    val (pos, t2) = readTree(t1.expect(COLON))
-
-    (ToEval(pos, params), t2)
-  }
-
-  def readFromEval(tokens: Tokens): Read[FromEval] = {
-    val (pos, tail) = readTree(tokens.expect(COLON))
-    (FromEval(pos), tail)
-  }
-
   def readWrap(tokens: Tokens.Tokens): Read[Wrap] = {
     val (exp, t1) = readExp(tokens)
     val (pos, t2) = readTree(t1.expect(COLON))
@@ -202,17 +199,18 @@ object ProofReader {
     }
   }
 
-  def readUsingAndImport(tokens: Tokens): Read[(Map[String, Path], Set[Path])] = {
-    def r(tokens: Tokens, using: Map[String, Path], imports: Set[Path]): Read[(Map[String, Path], Set[Path])] =
+  def readUsingAndImport(tokens: Tokens): Read[(Map[String, Path], Map[String, Path])] = {
+    def r(tokens: Tokens, using: Map[String, Path], imports: Map[String, Path]): Read[(Map[String, Path], Map[String, Path])] =
       if (tokens is "using") {
         val (p, tail) = tokens.tail.readList(DOT, _.string())
         val path = Path(p)
-        r(tail.ignore(SEMI), using + (p.last -> path), imports)
+        r(tail.ignore(SEMI), using + (path.last -> path), imports)
       } else if (tokens is "import") {
         val (p, tail) = tokens.tail.readList(DOT, _.string())
-        r(tail.ignore(SEMI), using, imports + Path(p))
+        val path = Path(p)
+        r(tail.ignore(SEMI), using, imports + (path.last -> path))
       } else ((using, imports), tokens)
-    r(tokens, Map.empty, Set.empty)
+    r(tokens, Map.empty, Map.empty)
   }
 
   def readFile(path: List[String], tokens: Tokens): FileTemplate = {

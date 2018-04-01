@@ -7,15 +7,12 @@ case class Wrap(wrapper: Exp, positions: Tree) extends PathManipulation(position
   override def dependencies(env: Environment): Set[Path] = env.dependencies(wrapper)
 
   override def replace(env: Environment, exp: Exp): Exp = wrapper match {
-    case Operation(name, dummies, parameters) => env(Path(name)) match {
+    case Operation(Variable(name), parameters) => env(Path(name)) match {
       case SimpleFunction(header, value) =>
-        if (header.dummies.length != dummies.length)
-          throw new IllegalArgumentException(s"Expected ${header.dummies.length} dummies, but recieved ${dummies.length}")
         if (header.parameters.length != parameters.length)
           throw new IllegalArgumentException(s"Expected ${header.parameters.length} arguments, but recieved ${parameters.length}")
-        val dumMap = header.dummies.zip(dummies).toMap
         val parMap = header.parameters.map(_.variable).zip(parameters).toMap
-        val expect = value.setAll(dumMap, v => parMap.getOrElse(v, v))
+        val expect = value.set(parMap)
         if (expect != exp)
           throw new IllegalArgumentException(s"Expected $expect, but recieved $exp")
         wrapper
@@ -26,6 +23,26 @@ case class Wrap(wrapper: Exp, positions: Tree) extends PathManipulation(position
         if (value != exp)
           throw new IllegalArgumentException(s"Expected $value, but recieved $exp")
         wrapper
+      case SimpleFunction(Header(_, params), value) =>
+        try {
+          val pars = value.matchExp(exp, params.map(_.variable -> None).toMap)
+            .getOrElse(throw new IllegalStateException(s"Expected substitute of $value, but received $exp"))
+            .map{ case (p, o) => p -> o.getOrElse(throw new IllegalStateException(s"Undefined parameter $p in $exp"))}
+
+          Operation(Variable(name), params.map(d => pars(d.variable)))
+        } catch {
+          case e: Exception => throw new IllegalArgumentException(s"Expected substitute of $value, but received $exp", e)
+        }
     }
+    case Lambda(params, value) =>
+      try {
+        val pars = value.matchExp(exp, params.map(_ -> None).toMap)
+          .getOrElse(throw new IllegalStateException(s"Expected substitute of $value, but received $exp"))
+          .map { case (p, o) => p -> o.getOrElse(throw new IllegalStateException(s"Undefined parameter $p in $exp")) }
+
+        Operation(Lambda(params, value), params.map(pars))
+      } catch {
+        case e: Exception => throw new IllegalArgumentException(s"Expected substitute of $value, but received $exp", e)
+      }
   }
 }

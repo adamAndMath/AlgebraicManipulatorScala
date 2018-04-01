@@ -1,2 +1,6 @@
+import base.Add.add
+import base.Div.div
+import base.Pow.pow
+import calculus.Lim.lim
 
-define object e=lim<h>(0,pow(add(1,h),div(1,h)))
+define object e=lim(0,h -> pow(add(1,h),div(1,h)))

@@ -1,17 +1,20 @@
-import Numbers;
-import calculus.Infinity;
+import Numbers.Complex;
+import base.Div.div;
+import calculus.Infinity.inf;
+
+assume fn lim(Complex, Complex -> Complex)
 
 assume Div<x>(Complex a)
-    lim<x>(a,div(x,x))=1;
+    lim(a, x -> div(x,x)) = 0;
 
-assume Resolve<x>(Complex a, Complex -> Complex f)
-    lim<x>(a,eval(f,x))=eval(f,a);
+assume Resolve(Complex a, Complex -> Complex f)
+    lim(a, f) = f(a);
 
 assume Func<x>(Complex a, Complex -> Complex f, Complex -> Complex g)
-    lim<x>(a,eval(f,eval(g,x)))=eval(f,lim<x>(a,eval(g,x)))=lim<x>(eval(g,a),eval(f,x));
+    lim(a, x -> f(g(x))) = f(lim(a, g)) = lim(g(a), f);
 
-assume Func2<x>(Complex a, (Complex,Complex) -> Complex f, Complex -> Complex g, Complex -> Complex h)
-    lim<x>(a,eval(f,eval(g,x),eval(h,x)))=eval(f,lim<x>(a,eval(g,x)),lim<x>(a,eval(h,x)));
+assume Func2<x>(Complex a, (Complex, Complex) -> Complex f, Complex -> Complex g, Complex -> Complex h)
+    lim(a, x -> f(g(x), h(x))) = f(lim(a, g), lim(a, h));
 
-assume Reciprocal<x>(Complex a)
-    lim<x>(inf,div(1,x))=0;
+assume Reciprocal<x>()
+    lim(inf, x -> div(1, x)) = 0;

@@ -1,175 +1,170 @@
-import Numbers;
+import Numbers.Complex;
+import Numbers.Integer;
+import base.Add.add;
+import base.Sub.sub;
+import base.Mult.mult;
+import base.Div.div;
+import base.Pow.pow;
 using base.Add;
 using base.Sub;
 using base.Mult;
 using base.Div;
 using base.Pow;
 
-assume Prod<i,r>((Integer,Complex) -> Complex f, Integer a, Integer b)
-    prod<i>(eval(f,i),a,b)=rec<i,r>(mult(r,eval(f,sub(add(i,a),1))),1,add(sub(b,a),1));
-
-work Identity<i>(Integer -> Complex f, Integer a) {
-    let 2 prod<i>(eval(f,i),a,sub(a,1));
-    substitute Prod<i,r>:1;
-    toeval(j:[1,1,0,0],q:[0]):1,0;
-    substitute Sub.Commute2[2->0]:1,2;
-    substitute Sub.Add1[2->0]:1,2,0;
-    substitute Sub.Inverse:1,2;
-    substitute Rec.Identity<i,r>:1;
-} result {
-    prod<i>(eval(f,i),a,sub(a,1))=1
+inductive fn prod(Integer -> Complex f, Integer a, Integer b) {
+    base b = a => f(a)
+    step add(b,1) => mult(prod(f,a,b),f(add(b,1)))
 }
 
-work Rec<i>(Integer -> Complex f, Integer a, Integer b) {
-    let 2 prod<i>(eval(f,i),a,b);
-    substitute Prod<i,r>:1;
-    toeval(j:[1,1,0,0],q:[0]):1,0;
-    substitute Rec.Rec<i,r>:1;
-    fromeval:1,2,0;
-    fromeval:1;
-    substitute Sub.Commute2[2->0]:1,1,1,0,0;
-    substitute Sub.Add1[2->0]:1,1,1,0;
-    substitute Sub.Add1[1->0]:1,1,1;
-    substitute Sub.Add1[1->2]:1,0,2;
-    substitute Sub.Commute[0->1]:1,0,2,0;
-    substitute Prod[1->0]<i,r>:1,0;
+work Single(Integer -> Complex f, Integer a) {
+    let 2 prod(f,a,a)
+    unwrap:1
 } result {
-    prod<i>(eval(f,i),a,b)=mult(prod<i>(eval(f,i),a,sub(b,1)),eval(f,b))
+    prod(f,a,a)=f(a)
 }
 
-work Single<i>(Integer -> Complex f, Integer a) {
-    let 2 prod<i>(eval(f,i),a,a);
-    substitute Rec<i>:1;
-    substitute Identity<i>:1,0;
-    substitute Mult.Identity[2->0]:1;
+work SuccRight(Integer -> Complex f, Integer a, Integer b) {
+    let 2 prod(f,a,add(b,1))
+    unwrap:1
 } result {
-     prod<i>(eval(f,i),a,a)=eval(f,a)
- }
+    prod(f,a,add(b,1))=mult(prod(f,a,b),f(add(b,1)))
+}
 
-induction Rec2<i>(Integer -> Complex f, Integer a, Integer b) {
-    base b=a {
-        let 2 prod<i>(eval(f,i),a,a);
-        substitute Rec<i>:1;
-        substitute Identity<i>:1,0;
-        substitute Mult.Commute:1;
-        substitute ~Identity<i>(f,add(a,1)):1,1;
-        substitute Sub.Add1[1->0]:1,1,2;
+induction PredLeft(Integer -> Complex f, Integer a, Integer b) {
+    base b = a {
+        let 2 prod(f,sub(a,1),a)
+        substitute ~Sub.AddSub(-,1):1,2
+        substitute SuccRight:1
+        substitute Single:1,0
+        substitute ~Single:1,1
     } b -> add(b,1) {
-        substitute Sub.Add1[0->1](-,1):[0,2|1,1,2];
-        call x mult(x,eval(f,add(b,1)));
-        substitute Mult.Associate:1;
-        substitute ~Rec<i>:[0|1,1];
+        call x mult(x,f(add(b,1)))
+        substitute Mult.Associate:1
+        substitute ~SuccRight:[0|1,1]
     } b -> sub(b,1) {
-        substitute Rec<i>:[0|1,1];
-        substitute ~Mult.Associate:1;
-        call x div(x,eval(f,b));
-        substitute ~Div.Mult1:[0|1];
+        substitute ~Sub.AddSub(-,1):[0|1,1],2
+        substitute SuccRight:[0|1,1]
+        substitute Sub.AddSub:[0|1,1],1,0
+        substitute ~Mult.Associate:1
+        call x div(x,f(b))
+        substitute Div.DivMult:[0|1]
     }
 } result {
-    prod<i>(eval(f,i),a,b)=mult(eval(f,a),prod<i>(eval(f,i),add(a,1),b))
+    prod(f,sub(a,1),b)=mult(f(sub(a,1)),prod(f,a,b))
 }
 
-work IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
-    let 2 prod<i>(eval(f,i),a,b);
-    substitute Prod<i,r>:1;
-    substitute Sub.Add1[0->1](-,c):1,[2,0,0|0,1,1];
-    substitute Sub.Commute[1->2]:1,2,0;
-    substitute Sub.Commute2[2->0]:1,0,1,1,0;
-    substitute Add.Associate:1,0,1,1,0,0;
-    toeval(j:[1,0]):1,0,1;
-    substitute Prod[1->0]<i,r>:1;
-    fromeval:1,0;
+work Identity(Integer -> Complex f, Integer a) {
+    let 2 prod(f,a,sub(a,1))
+    substitute ~Div.DivMult(-,f(a)):1
+    substitute ~Sub.AddSub(-,1):1,0,1,0
+    substitute ~SuccRight:1,0
+    substitute Sub.AddSub:1,0,2
+    substitute Single:1,0
+    substitute Div.Inverse:1
 } result {
-    prod<i>(eval(f,i),a,b)=prod<i>(eval(f,sub(i,c)),add(a,c),add(b,c))
+    prod(f,a,sub(a,1))=1
+}
+
+induction IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
+    base b = a {
+        let 2 prod(f,a,a)
+        substitute Single:1
+        substitute ~Sub.SubAdd(-,c):1,0
+        wrap i -> f(sub(i,c)):1
+        substitute ~Single:1
+    } b -> add(b,1) {
+        call x mult(x,f(add(b,1)))
+        substitute ~Sub.SubAdd(-,c):1,1,0
+        wrap i -> f(sub(i,c)):1,1
+        substitute Add.Associate:1,1,0
+        substitute Add.Commute:1,1,0,1
+        substitute ~Add.Associate:1,1,0
+        substitute ~SuccRight:[0|1]
+        substitute Add.Associate:1,2
+        substitute Add.Commute:1,2,1
+        substitute ~Add.Associate:1,2
+    }
+} result {
+    prod(f,a,b)=prod(i->f(sub(i,c)),add(a,c),add(b,c))
 }
 
 induction Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
-    base a=0,b=0 {
-        let 2 prod<i>(eval(f,i),0,0);
-        substitute Single<i>:1;
-        substitute ~Sub.Inverse(0):1,1;
-        substitute ~Sub.Inverse(0):1,1,1;
-        toeval(j:[1,1]):1;
-        substitute ~Single<i>:1;
-        fromeval:1,0;
-    } a -> add(a,1) {
-        substitute Rec2<i>:0;
-        substitute Mult.Commute:0;
-        toeval(j:[1,1]):1,0;
-        substitute Rec<i>:1;
-        fromeval:1,[0,0|1];
-        substitute ~Sub.Negate:1,1,1;
-        substitute Sub.Commute[0->2]:1,0,2;
-        call x div(x,eval(f,a));
-        substitute Div.Mult1[1->0]:[0|1];
-    } a -> sub(a,1) {
-        substitute Sub.Add1[0->2](-,1):[0,1|1,2,1];
-        substitute Sub.Commute[2->0]:1,2;
-        call x mult(x,eval(f,sub(a,1)));
-        substitute Mult.Commute:0;
-        substitute Rec2[1->0]<i>:0;
-        substitute Sub.Negate:1,1,1;
-        toeval(j:[1,1]):1,[0,0|1];
-        substitute Rec[1->0]<i>:1;
-        fromeval:1,0;
+    base b=0 {
+        let 2 prod(f,a,a)
+        substitute Single:1
+        substitute Sub.Negate:1,0
+        wrap i -> f(sub(0,i)):1
+        substitute ~Single:1
     } b -> add(b,1) {
-        substitute Sub.Add1[0->1](-,1):[0,2|1,1,1];
-        substitute Sub.Commute2[3->2]:1,1;
-        call x mult(x,eval(f,add(b,1)));
+        call x mult(x,f(add(b,1)))
+        substitute Mult.Commute:1
+        substitute ~SuccRight:0
+        substitute Sub.Negate:1,0,0,0;
+        substitute Sub.Commute2[2->3]:1,0,0
+        wrap i -> f(sub(0,i)):1,0
+        substitute ~PredLeft:1
+        substitute Sub.Commute[0->2]:1,1
+    } b -> sub(b,1){
+        substitute ~Sub.AddSub(-,1):0,2
+        substitute SuccRight:0;
+        substitute ~Sub.SubAdd(-,1):1,1
+        substitute PredLeft:1
+        unwrap:1,0
         substitute Mult.Commute:1;
-        substitute Rec[1->0]<i>:0;
-        substitute Sub.Negate:1,0,1;
-        toeval(j:[1,1]):1,[1,0|0];
-        substitute ~Rec2<i>:1;
-        fromeval:1,0;
-    } b -> sub(b,1) {
-        substitute Rec<i>:0;
-        toeval(j:[1,1]):1,0;
-        substitute Rec2<i>:1;
-        fromeval:1,[0|1,0];
-        substitute Mult.Commute:1;
-        substitute ~Sub.Negate:1,1,1;
+        substitute Sub.AddSub:0,1,0
+        substitute Sub.SubAdd:1,1,0,1
+        substitute ~Sub.Negate(b):1,1,0;
         substitute Sub.Commute2[2->3]:1,0,1;
-        call x div(x,eval(f,b));
-        substitute Div.Mult1[1->0]:[0|1];
+        call x div(x,f(b));
+        substitute Div.DivMult:[0|1];
     }
 } result {
-    prod<i>(eval(f,i),a,b)=prod<i>(eval(f,sub(0,i)),sub(0,b),sub(0,a))
+    prod(f,a,b)=prod(i -> f(sub(0,i)),sub(0,b),sub(0,a))
 }
 
-induction RangeSplit<i,j>(Integer -> Complex f, Integer a, Integer b, Integer c) {
+induction RangeSplit(Integer -> Complex f, Integer a, Integer b, Integer c) {
     base c=b {
-        let 2 prod<i>(eval(f,i),a,b);
-        substitute Mult.Identity[0->1]:1;
-        substitute ~Identity<j>(f,add(b,1)):1,1;
-        substitute Sub.Add1[1->0]:1,1,2;
+        let 2 prod(f,a,b);
+        substitute ~Mult.IdentityRight:1;
+        substitute ~Identity(f,add(b,1)):1,1;
+        substitute Sub.SubAdd:1,1,2;
     } c -> add(c,1) {
-        call x mult(x,eval(f,add(c,1)));
+        call x mult(x,f(add(c,1)));
         substitute Mult.Associate:1;
-        substitute Sub.Add1[0->1](-,1):[0,0,2|1,1,0,2];
-        substitute ~Rec<i>:0;
-        substitute ~Rec<j>:1,1;
-    } c -> sub(c,1) {
-        substitute Rec<i>:0;
-        substitute Rec<j>:1,1;
+        substitute ~SuccRight:[0|1,1];
+    } c -> sub(c,1){
+        substitute ~Sub.AddSub(-,1):[0|1,1],2;
+        substitute SuccRight:[0|1,1];
+        substitute Sub.AddSub:[0|1,1],1,0;
         substitute ~Mult.Associate:1;
-        call x div(x,eval(f,c));
-        substitute Div.Mult1[1->0]:[0|1];
+        call x div(x,f(c));
+        substitute Div.DivMult:[0|1];
     }
 } result {
-    prod<i>(eval(f,i),a,c)=mult(prod<i>(eval(f,i),a,b),prod<j>(eval(f,j),add(b,1),c))
+    prod(f,a,c)=mult(prod(f,a,b),prod(f,add(b,1),c))
 }
 
-induction Distribute<i,j>(Integer -> Complex f, Integer -> Complex g, Integer a, Integer b) {
+induction Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer a, Integer b) {
     base b=a {
-        let 2 mult(eval(f,a),eval(g,a));
-        toeval(k:[0,1|1,1]):0;
-        substitute ~Single<i>:0;
-        fromeval:0,0;
-        substitute ~Single<i>:1,0;
-        substitute ~Single<j>:1,1;
+        let 2 add(f(a),g(a));
+        wrap i -> add(f(i),g(i)):0
+        substitute ~Single:[0|1,[0|1]];
     } b -> add(b,1) {
-        call x mult(x,mult(eval(f,add(b,1)),eval(g,add(b,1))));
+        call x mult(x,mult(f(add(b,1)),g(add(b,1))))
+
+        substitute ~Mult.Associate:1
+        substitute Mult.Associate:1,0
+        substitute Mult.Commute:1,0,1
+        substitute ~Mult.Associate:1,0
+        substitute Mult.Associate:1
+
+        wrap i -> mult(f(i),g(i)):0,1
+        substitute ~SuccRight:[0|1,[0|1]]
+    } b -> sub(b,1){
+        substitute ~Sub.AddSub(-,1):[0|1,[0|1]],2
+        substitute SuccRight:[0|1,[0|1]]
+        unwrap:0,1
+        substitute Sub.AddSub:[0,1,[0|1]|1,[0|1],1],0;
 
         substitute ~Mult.Associate:1;
         substitute Mult.Associate:1,0;
@@ -177,160 +172,82 @@ induction Distribute<i,j>(Integer -> Complex f, Integer -> Complex g, Integer a,
         substitute ~Mult.Associate:1,0;
         substitute Mult.Associate:1;
 
-        substitute Sub.Add1[0->1](-,1):[0,0,2|1,0,0,2|1,1,0,2];
-
-        toeval(k:[0,1|1,1]):0,[0,0|1];
-        substitute ~Rec<i>:0;
-        fromeval:0,0;
-        substitute ~Rec<i>:1,0;
-        substitute ~Rec<j>:1,1;
-    } b -> sub(b,1) {
-        toeval(k:[0,1|1,1]):0,0;
-        substitute Rec<i>:0;
-        fromeval:0,[0,0|1];
-        substitute Rec<i>:1,0;
-        substitute Rec<j>:1,1;
-
-        substitute ~Mult.Associate:1;
-        substitute Mult.Associate:1,0;
-        substitute Mult.Commute:1,0,1;
-        substitute ~Mult.Associate:1,0;
-        substitute Mult.Associate:1;
-
-        call x div(x,mult(eval(f,b),eval(g,b)));
-
-        substitute Div.Mult1[1->0]:[0|1];
+        call x div(x,mult(f(b),g(b)));
+        substitute Div.DivMult:[0|1];
     }
 } result {
-    prod<i>(mult(eval(f,i),eval(g,i)),a,b)=mult(prod<i>(eval(f,i),a,b),prod<j>(eval(g,j),a,b))
+    prod(i -> mult(f(i),g(i)),a,b)=mult(prod(f,a,b),prod(g,a,b))
 }
 
 induction Commute<i,j>((Integer,Integer) -> Complex f, Integer a1, Integer b1, Integer a2, Integer b2) {
-    base b1=a1, b2=a2 {
-        let 2 eval(f,a1,a2);
-        toeval(a:[1]):[0|1];
-        substitute ~Single<i>:[0|1];
-        fromeval:[0,0|1,0];
-        toeval(a:[2]):0,0;
-        toeval(a:[0,2]):1;
-        substitute ~Single<j>:[0,0|1];
-        fromeval:[0,0,0|1,0];
+    base b1=a1 {
+        let 2 prod(j -> f(a1,j),a2,b2)
+        wrap i -> prod(j -> f(i,j),a2,b2):0
+        wrap i -> f(i,j):1,0,0
+        substitute ~Single:[0|1,0,0]
     } b1 -> add(b1,1) {
-        call x mult(x,prod<j>(eval(f,add(b1,1),j),a2,b2));
-        toeval(k:[0,2]):1,0,0;
-        toeval(k:[2]):1,1,0;
-        substitute ~Distribute<j,j>:1;
-        fromeval:1,0,[0|1];
-
-        substitute Sub.Add1[0->1](-,1):[0,0,2|1,0,0,2];
-        toeval(k:[0,1]):0,[0,0|1];
-        toeval(k:[1]):1,0,[0,0|1];
-        substitute ~Rec<i>:[0|1,0];
-        fromeval:[0,0|1,0,0];
-    } b1 -> sub(b1,1) {
-        toeval(k:[0,1]):0,0;
-        toeval(k:[1]):1,0,0;
-        substitute Rec<i>:[0|1,0];
-        fromeval:[0,[0,0|1]|1,0,[0,0|1]];
-
-        toeval(k:[0,2]):1,0,0;
-        toeval(k:[2]):1,0,1;
-        substitute Distribute<j,j>:1;
-        fromeval:1,[0,0|1,0];
-
-        call x div(x,prod<j>(eval(f,b1,j),a2,b2));
-        substitute Div.Mult1[1->0]:[0|1];
-    } b2 -> add(b2,1) {
-        call x mult(x,prod<i>(eval(f,i,add(b2,1)),a1,b1));
-        toeval(k:[0,1]):0,0,0;
-        toeval(k:[1]):0,1,0;
-        substitute ~Distribute<i,i>:0;
-        fromeval:0,0,[0|1];
-
-        substitute Sub.Add1[0->1](-,1):[1,0,2|0,0,0,2];
-        toeval(k:[0,2]):1,[0,0|1];
-        toeval(k:[2]):0,0,[0,0|1];
-        substitute ~Rec<j>:[1|0,0];
-        fromeval:[1,0|0,0,0];
-    } b2 -> sub(b2,1) {
-        toeval(k:[2]):0,0,0;
-        toeval(k:[0,2]):1,0;
-        substitute Rec<j>:[0,0|1];
-        fromeval:[0,0,[0,0|1]|1,[0,0|1]];
-
-        toeval(k:[0,1]):0,0,0;
-        toeval(k:[1]):0,0,1;
-        substitute Distribute<i,i>:0;
-        fromeval:0,[0,0|1,0];
-
-        call x div(x,prod<i>(eval(f,i,b2),a1,b1));
-        substitute Div.Mult1[1->0]:[0|1];
+        call x mult(x,prod(j -> f(add(b1,1),j),a2,b2))
+        substitute ~Distribute<j>:1
+        unwrap:1,0,0,[0|1]
+        wrap i -> prod(j -> f(i,j),a2,b2):0,1
+        wrap i -> f(i,j):1,0,0,1
+        substitute ~SuccRight:[0|1,0,0]
+    } b1 -> sub(b1,1){
+        substitute ~Sub.AddSub(-,1):[0|1,0,0],2
+        substitute SuccRight:[0|1,0,0];
+        substitute Sub.AddSub:[0|1,0,0],1,0
+        unwrap:[0|1,0,0],1
+        wrap j -> prod(i -> f(i,j),a1,sub(b1,1)):1,0,0,0
+        wrap j -> f(b1,j):1,0,0,1
+        substitute Distribute<j>:1;
+        call x div(x,prod(j -> f(b1,j),a2,b2));
+        substitute Div.DivMult:[0|1];
     }
 } result {
-    prod<i>(prod<j>(eval(f,i,j),a2,b2),a1,b1)=prod<j>(prod<i>(eval(f,i,j),a1,b1),a2,b2)
+    prod(i -> prod(j -> f(i,j),a2,b2),a1,b1)=prod(j -> prod(i -> f(i,j),a1,b1),a2,b2)
 }
 
 induction TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, Integer n) {
     base n=a {
-        let 2 eval(f,a,a);
-        toeval(k:[2]):0;
-        substitute ~Single<j>:0;
-        fromeval:0,0;
-        toeval(k:[0,1|2]):0;
-        substitute ~Single<i>:0;
-        fromeval:0,0;
-        toeval(k:[1]):1;
-        substitute ~Single<i>:1;
-        fromeval:1,0;
-        toeval(k:[0,2|1]):1;
-        substitute ~Single<j>:1;
-        fromeval:1,0;
+        let 2 f(a,a)
+        wrap j -> f(a,j):0
+        wrap i -> f(i,a):1
+        substitute ~Single:[0|1]
+        wrap i -> prod(j -> f(i,j),a,i):0
+        wrap j -> prod(i -> f(i,j),j,a):1
+        substitute ~Single:[0|1]
     } n -> add(n,1) {
-        call x mult(x,prod<j>(eval(f,add(n,1),j),a,add(n,1)));
-        substitute Sub.Add1[0->1](-,1):0,0,2;
-        toeval(k:[0,1|2]):0,[0,0|1];
-        substitute ~Rec<i>:0;
-        fromeval:0,0;
-        toeval(k:[2]):1,1,0;
-        substitute Rec<j>:1,1;
-        fromeval:1,1,[0,0|1];
-        substitute Sub.Add1[1->0]:1,1,0,2;
-        substitute ~Mult.Associate:1;
-        toeval(k:[0,2|1]):1,0,0,0;
-        toeval(k:[2]):1,0,1,0;
-        substitute ~Distribute<j,j>:1,0;
-        fromeval:1,0,0,[0|1];
-        toeval(k:[1]):1,0,0,[0,0|1];
-        substitute Sub.Add1[0->1](-,1):1,0,0,0,2;
-        substitute ~Rec<i>:1,0,0;
-        fromeval:1,0,0,0;
-        toeval(k:[1]):1,1;
-        substitute ~Single<i>:1,1;
-        fromeval:1,1,0;
-        substitute Sub.Add1[0->1](-,1):1,0,2;
-        toeval(k:[0,2|1]):1,[0,0|1];
-        substitute ~Rec<j>:1;
-        fromeval:1,0;
-    } n -> sub(n,1) {
-        toeval(k:[0,1|2]):0,0;
-        substitute Rec<i>:0;
-        fromeval:0,[0,0|1];
+        call x mult(x,prod(j -> f(add(n,1),j),a,add(n,1)))
+        wrap i -> prod(j -> f(i,j),a,i):0,1
+        substitute ~SuccRight:0
+        substitute SuccRight:1,1
+        substitute ~Mult.Associate:1
+        substitute ~Distribute<j>:1,0
+        unwrap:1,[0,0,0,[0|1]|1]
+        wrap i -> f(i,j):1,0,0,0,1
+        substitute ~SuccRight:1,0,0,0
+        wrap i -> f(i,add(n,1)):1,1
+        substitute ~Single:1,1;
+        wrap j -> prod(i -> f(i,j),j,add(n,1)):1,1
+        substitute ~SuccRight:1;
+    } n -> sub(n,1){
+        substitute ~Sub.AddSub(-,1):[0|1,0,0],2
+        substitute SuccRight:[0|1,0,0]
+        substitute Sub.AddSub:[0|1,0,0],1,0
+        unwrap:[0|1,0,0],1
+        wrap j -> prod(i -> f(i,j),j,sub(n,1)):1,0,0,0
+        wrap j -> f(n,j):1,0,0,1
+        substitute Distribute<j>:1;
+        substitute ~Sub.AddSub(-,1):1,0,2
+        substitute SuccRight:1,0;
+        substitute Sub.AddSub:1,0,1,0
+        unwrap:1,0,1
+        substitute Identity:1,0,1;
+        substitute Mult.IdentityRight:1,0;
 
-        toeval(k:[1]):1,0,0;
-        substitute Rec<i>:1,0;
-        fromeval:1,0,[0,0|1];
-        toeval(k:[0,2|1]):1,0,0;
-        toeval(k:[2]):1,0,1;
-        substitute Distribute<j,j>:1;
-        substitute Rec<j>:1,0;
-        fromeval:1,[0,[0,0|1]|1,0];
-        toeval(k:[1]):1,0,1,0;
-        substitute Identity<i>:1,0,1;
-        substitute Mult.Identity[1->0]:1,0;
-
-        call x div(x,prod<j>(eval(f,n,j),a,n));
-        substitute Div.Mult1[1->0]:[0|1];
+        call x div(x,prod(j -> f(n,j),a,n));
+        substitute Div.DivMult:[0|1];
     }
 } result {
-    prod<i>(prod<j>(eval(f,i,j),a,i),a,n)=prod<j>(prod<i>(eval(f,i,j),j,n),a,n)
+    prod(i -> prod(j -> f(i,j),a,i),a,n)=prod(j -> prod(i -> f(i,j),j,n),a,n)
 }

@@ -1,9 +1,8 @@
-import Numbers
+import Numbers.Complex
+import base.Add.add
+import base.Sub.sub
 
 assume fn mult(Complex, Complex)
-
-assume Identity(Complex a)
-    a=mult(a,1)=mult(1,a);
 
 assume Commute(Complex a, Complex b)
     mult(a,b)=mult(b,a);
@@ -14,11 +13,22 @@ assume Associate(Complex a, Complex b, Complex c)
 assume Distribute(Complex f, Complex a, Complex b)
     mult(f,add(a,b))=add(mult(f,a),mult(f,b));
 
+assume IdentityRight(Complex a)
+    mult(a,1)=a
+
+work IdentityLeft(Complex a) {
+    let 2 mult(1,a)
+    substitute Commute:1
+    substitute IdentityRight:1
+} result {
+    mult(1,a)=a
+}
+
 work DistributeSub(Complex f, Complex a, Complex b) {
     let 2 sub(mult(f,a),mult(f,b));
-    substitute Sub.Add1[0->2](-,b):0,0,1;
+    substitute ~Sub.AddSub(-,b):0,0,1;
     substitute Distribute:0,0;
-    substitute Sub.Add1[1->0]:0;
+    substitute Sub.SubAdd:0;
 } result {
     mult(f,sub(a,b))=sub(mult(f,a),mult(f,b))
 }
@@ -26,7 +36,7 @@ work DistributeSub(Complex f, Complex a, Complex b) {
 work Singularity(Complex a) {
     let 3 0;
     substitute ~Sub.Inverse(a):[1|2];
-    substitute Identity[0->1]:[1,[0|1]|2,[0|1]];
+    substitute ~IdentityRight:[1,[0|1]|2,[0|1]];
     substitute ~DistributeSub:[1|2];
     substitute Sub.Inverse:[1,1|2,1];
     substitute Commute:1;
@@ -37,7 +47,7 @@ work Singularity(Complex a) {
 work Sub(Complex a) {
     let 3 sub(0,a);
     substitute Singularity[0->2](a):[1,0|2,0];
-    substitute Identity[0->1]:[1,1|2,1];
+    substitute ~IdentityRight:[1,1|2,1];
     substitute ~DistributeSub:[1|2];
     substitute Commute:1;
 } result {
