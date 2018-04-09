@@ -50,6 +50,12 @@ object Tokens {
             go(Token(pos, line, ARROW, prev), pos + 2, line, code.tail.tail)
           else
             go(Token(pos, line, DASH, prev), pos + 1, line, code.tail)
+        case '"' =>
+          val str = code.tail.takeWhile(c => c != '"' && c != '\n').mkString
+          val tail = code.drop(str.length+1)
+          if (tail.isEmpty) throw new TokenException(Token(pos+str.length+2, line, EOF, EndToken), "Unended string")
+          if (tail.head == '\n') throw new TokenException(Token(pos+str.length+2, line, STRING("\\n"), EndToken), "Unended string")
+          go(Token(pos, line, SSTRING(str), prev), pos + str.length + 2, line, tail.tail)
         case c =>
           if (c.isDigit) {
             val num = code.takeWhile(_.isDigit).mkString
@@ -114,6 +120,11 @@ object Tokens {
     def string(): Read[String] = token match {
       case STRING(str) => (str, tail)
       case _ => throw new UnexpectedTokenException(this, STRING("abc"))
+    }
+
+    def sstring(): Read[String] = token match {
+      case SSTRING(str) => (str, tail)
+      case _ => throw new UnexpectedTokenException(this, SSTRING("abc"))
     }
 
     def int(): Read[Int] = token match {
@@ -218,6 +229,7 @@ object Tokens {
   case object ARROW extends ProofToken
   case object TILDE extends ProofToken
   case class STRING(str: String) extends ProofToken
+  case class SSTRING(str: String) extends ProofToken
   case class INT(i: Int) extends ProofToken
 
   sealed abstract class Block(val open: ProofToken, val close: ProofToken)

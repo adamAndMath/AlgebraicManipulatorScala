@@ -7,7 +7,7 @@ case class Header(dummies: List[Variable], parameters: List[Definition]) extends
 
   override def toString: String =
     if (dummies.isEmpty) s"(${parameters.mkString(",")})"
-    else s"<${dummies.mkString(",")}(${parameters.mkString(",")})>"
+    else s"<${dummies.mkString(",")}>(${parameters.mkString(",")})"
 
   def bind(env: Environment): Environment = env.bind(parameters)
   def bindWithDummies(env: Environment):Environment = env.bind(parameters).bind(dummies.map(_.name).toSet)

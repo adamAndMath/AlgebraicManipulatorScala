@@ -11,8 +11,7 @@ import algebraic.manipulator.objects._
 import algebraic.manipulator.structure._
 
 object LatexWriter {
-  var operationWriters = Map.empty[String, (Operation, PathTree[String], PathTree[String], Int) => String]
-  var typeNames = Map.empty[String, String]
+  var expWriter: ExpWriter = ExpWriter(Map.empty, Map.empty, Nil)
   var colors = List("red", "blue", "olive", "orange", "yellow")
 
   sealed trait ElementLocation
@@ -104,7 +103,6 @@ object LatexWriter {
   def writeAssumption(element: Element): String = element match {
     case a: Assumption => s"$$${writeDefinition(a.header)}: ${a.result.map(writeExp(_)).mkString("=")}$$"
   }
-
 
   def writeElement(env: Environment, element: Element): String = element match {
     case p: Proof =>
@@ -208,45 +206,13 @@ object LatexWriter {
   }
 
   def writeType(t: Type): String = t match {
-    case SimpleType(n) => typeNames.getOrElse(n, n)
+    case SimpleType(n) => expWriter.writeType(n)
     case FuncType(from, to) => s"\\left(${writeType(from)} \\rightarrow ${writeType(to)}\\right)"
     case TupleType(ts) => s"\\left(${ts.map(writeType).mkString(",")}\\right)"
   }
 
   def writeExp(exp: Exp, textColor: PathTree[String] = PathTree.empty, backColor: PathTree[String] = PathTree.empty, binding: Int = 0): String = {
-    if (textColor.isLeaf)
-      colorText(textColor.asInstanceOf[PathTree.Leaf[String]].leaf, writeExp(exp, PathTree.empty, backColor, binding))
-    else if (backColor.isLeaf)
-      colorBack(backColor.asInstanceOf[PathTree.Leaf[String]].leaf, writeExp(exp, textColor, PathTree.empty, binding))
-    else {
-      exp match {
-        case op @ Operation(Variable(name), _) =>
-          if (operationWriters.contains(name))
-            operationWriters(name)(op, textColor, backColor, binding)
-          else
-            defaultWriter(op, textColor, backColor, binding)
-        case op: Operation => defaultWriter(op, textColor, backColor, binding)
-        case Variable(name) =>
-          if (textColor.nonEmpty || backColor.nonEmpty)
-            throw new IllegalArgumentException(s"Trees must be empty $exp $textColor $backColor")
-          name
-        case IntVal(v) =>
-          if (textColor.nonEmpty || backColor.nonEmpty)
-            throw new IllegalArgumentException(s"Trees must be empty $exp $textColor $backColor")
-          v.toString
-        case Lambda(params, e) =>
-          if (binding > 0)
-            s"\\left(${params.map(writeExp(_)).mkString(", ")} \\rightarrow ${writeExp(e, textColor(0), backColor(0))}\\right)"
-          else
-            s"${params.map(writeExp(_)).mkString(", ")} \\rightarrow ${writeExp(e, textColor(0), backColor(0))}"
-      }
-    }
-  }
-
-  def defaultWriter(op: Operation, textColor: PathTree[String], backColor: PathTree[String], binding: Int): String = {
-    val func = writeExp(op.op, textColor(-1), backColor(-1))
-    val parameters = (op.parameters.indices zip op.parameters).map { case (i, exp) => writeExp(exp, textColor(i), backColor(i)) }.mkString(",")
-    s"$func\\left($parameters\\right)"
+    expWriter(exp, textColor, backColor, binding)
   }
 
   def colorText(color: Option[String], toColor: String): String = if (color.isEmpty) toColor else colorText(color.get, toColor)

@@ -1,0 +1,25 @@
+type Natural => "\mathbb{N}"
+type Integer => "\mathbb{Z}"
+type Rational => "\mathbb{Q}"
+type Real => "\mathbb{R}"
+type Complex => "\mathbb{C}"
+
+var add => "+"
+var sub => "-"
+var mult => "\cdot"
+var div => "/"
+
+exp(a,b) add(a,b) => (a:1+" "+[-1]+" "+b:2):1
+exp(a,b) sub(a,b) => (a:1+" "+[-1]+" "+b:2):1
+exp(a,b) mult(a,b) => (a:2+" "+[-1]+" "+b:3):2
+exp(a,b) div(a,b) => ("\frac{"+a+"}{"+b+"}"):3
+exp(a,b) pow(a,b) => ("{"+a:5+"}^{"+b:5+"}"):4
+exp(a,b) log(a,b) => "log_{"+a+"}\left("+b+"\right)"
+exp(i,f,a,b) sum(i->f,a,b) => "\displaystyle\sum_{"+i+"="+a+"}^{"+b+"}"+f:2
+exp(i,f,a,b) prod(i->f,a,b) => "\displaystyle\prod_{"+i+"="+a+"}^{"+b+"}"+f:2
+exp(f,a,b) sum(f,a,b) => "\displaystyle\sum_{"+a+".."+b+"}"+f:2
+exp(f,a,b) prod(f,a,b) => "\displaystyle\prod_{"+a+".."+b+"}"+f:2
+exp(i,f,a) lim(a,i->f) => "\displaystyle\lim_{"+i+" \rightarrow "+a+"}\left("+f+"\right)"
+exp(f,a) lim(a,f) => "\displaystyle\lim_{"+a+"}\left("+f+"\right)"
+exp(f,x) diff(x -> f)(x) => "\frac{\mathrm d}{\mathrm d "+[0]+"}"+f:inf
+exp(f) diff(f) => f:inf+"'"

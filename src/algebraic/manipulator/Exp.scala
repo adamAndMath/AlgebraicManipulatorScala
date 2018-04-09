@@ -56,7 +56,7 @@ case class Variable(name: String) extends Exp {
   override def getBound: Set[Variable] = Set.empty
 
   override def set(map: Map[Variable, Exp]): Exp = map.getOrElse(this, this)
-  override def setAll(dum: Map[Variable, Variable], map: Map[Variable, Exp]): Exp = dum.getOrElse(this, map.getOrElse(this, this))
+  override def setAll(dum: Map[Variable, Variable], map: Map[Variable, Exp]): Exp = map.getOrElse(this, this)
 
   override def tree: PathTree[Variable] = PathTree.Leaf(this)
 
@@ -126,7 +126,7 @@ case class Lambda(params: List[Variable], exp: Exp) extends Exp {
           if (b.exists{case (k, v) => bounds.getOrElse(k, Some(k)).exists(_ != v.get)})
             None
           else
-            this.exp.matchExp(e, bounds ++ b, params -- this.params ++ b).map(re => re._1 -> (re._2 -- b.keys))
+            this.exp.matchExp(e, bounds ++ b, params -- this.params ++ b).map(re => re._1 -> (re._2 -- b.keys ++ params.filterKeys(b.contains)))
         }
       case _ => None
     }
@@ -177,20 +177,22 @@ case class Operation(op: Exp, parameters: List[Exp]) extends Exp {
   override def replace(tree: Tree, func: Exp => Exp): Exp = tree match {
     case Tree.Leaf => func(this)
     case n @ Tree.Node(c) =>
-      if (n.min < -1 || n.max >= parameters.size)
-        throw new IllegalArgumentException
-      else
-        Operation(if (c.contains(-1)) op.replace(c(-1), func) else op, (parameters.indices zip parameters).map{case (i,e) => if (c.contains(i)) e.replace(c(i), func) else e}.toList)
+      if (n.min < -1)
+        throw new IndexOutOfBoundsException(n.min.toString)
+      if (n.max >= parameters.size)
+        throw new IndexOutOfBoundsException(n.max.toString)
+      Operation(if (c.contains(-1)) op.replace(c(-1), func) else op, (parameters.indices zip parameters).map{case (i,e) => if (c.contains(i)) e.replace(c(i), func) else e}.toList)
   }
 
   override def replace[T](tree: PathTree[T], func: (Exp, T) => Exp): Exp = tree match {
     case PathTree.Empty => this
     case PathTree.Leaf(a) => func(this, a)
     case n @ PathTree.Node(_) =>
-      if (n.min < -1 || n.max >= parameters.size)
-        throw new IllegalArgumentException
-      else
-        Operation(op.replace(n(-1), func), (parameters.indices zip parameters).map{case (i,e) => e.replace(n(i), func)}.toList)
+      if (n.min < -1)
+        throw new IndexOutOfBoundsException(n.min.toString)
+      if (n.max >= parameters.size)
+        throw new IndexOutOfBoundsException(n.max.toString)
+      Operation(op.replace(n(-1), func), (parameters.indices zip parameters).map{case (i,e) => e.replace(n(i), func)}.toList)
   }
 
   override def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])] =

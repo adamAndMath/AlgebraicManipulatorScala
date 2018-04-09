@@ -5,7 +5,7 @@ import calculus.Infinity.inf;
 assume fn lim(Complex, Complex -> Complex)
 
 assume Div<x>(Complex a)
-    lim(a, x -> div(x,x)) = 0;
+    lim(a, x -> div(x,x)) = 1;
 
 assume Resolve(Complex a, Complex -> Complex f)
     lim(a, f) = f(a);

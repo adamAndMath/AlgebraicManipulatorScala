@@ -7,7 +7,6 @@ import algebraic.manipulator.read.ProofReader
 
 object Main {
   def main(args: Array[String]): Unit = {
-    LatexDefault.setup()
     val projectTemplate = ProofReader.readProject(Paths.get(args(0)))
     println(projectTemplate)
     val project = projectTemplate()
