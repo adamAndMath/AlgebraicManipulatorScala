@@ -32,24 +32,7 @@ sealed trait Exp extends Depending {
     case PathTree.Node(_) => throw new IllegalArgumentException("Illegal path")
   }
 
-  def matchExp(exp: Exp, params: Map[Variable, Option[Exp]]): Option[Map[Variable, Option[Exp]]] = {
-    val parTree = tree.filter(!getBound.contains(_))
-    var pars = params
-
-    if (parTree.nonEmpty) {
-      for ((p, e) <- exp.get(parTree)) {
-        if (!pars.contains(p)) {
-          if (p != e)
-            return None
-        } else if (pars(p).isEmpty)
-          pars += (p -> Some(e))
-        else if (!pars(p).contains(e))
-          return None
-      }
-    }
-
-    Some(pars)
-  }
+  def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])]
 }
 
 case class IntVal(v: Int) extends Exp {
@@ -60,6 +43,9 @@ case class IntVal(v: Int) extends Exp {
   override def set(map: Map[Variable, Exp]): Exp = this
   override def setAll(dum: Map[Variable, Variable], map: Map[Variable, Exp]): Exp = this
   override def tree: PathTree[Variable] = PathTree.empty
+
+  override def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])] =
+    Some((bounds, params)).filter(_ => exp == this)
 }
 
 case class Variable(name: String) extends Exp {
@@ -73,6 +59,14 @@ case class Variable(name: String) extends Exp {
   override def setAll(dum: Map[Variable, Variable], map: Map[Variable, Exp]): Exp = dum.getOrElse(this, map.getOrElse(this, this))
 
   override def tree: PathTree[Variable] = PathTree.Leaf(this)
+
+  override def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])] =
+    if (!params.contains(this))
+      Some((bounds, params)).filter(_ => this == exp)
+    else if (params(this).isDefined)
+      Some((bounds, params)).filter(_ => params(this).get == exp)
+    else
+      Some((bounds, params + (this -> Some(exp))))
 }
 
 case class Lambda(params: List[Variable], exp: Exp) extends Exp {
@@ -121,6 +115,21 @@ case class Lambda(params: List[Variable], exp: Exp) extends Exp {
       if (c.keySet == Set(0)) Lambda(params, exp.replace(c(0), func))
       else throw new IndexOutOfBoundsException
   }
+
+  override def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])] =
+    exp match {
+      case Lambda(p, e) =>
+        if(this.params.length != p.length)
+          None
+        else {
+          val b = (this.params zip p).toMap.filterKeys(bounds.contains).mapValues(Some(_))
+          if (b.exists{case (k, v) => bounds.getOrElse(k, Some(k)).exists(_ != v.get)})
+            None
+          else
+            this.exp.matchExp(e, bounds ++ b, params -- this.params ++ b).map(re => re._1 -> (re._2 -- b.keys))
+        }
+      case _ => None
+    }
 }
 
 case class Operation(op: Exp, parameters: List[Exp]) extends Exp {
@@ -136,20 +145,22 @@ case class Operation(op: Exp, parameters: List[Exp]) extends Exp {
   override def get(tree: Tree): TraversableOnce[Exp] = tree match {
     case Tree.Leaf => List(this)
     case n @ Tree.Node(c) =>
-      if (n.min < 0 || n.max >= parameters.size)
-        throw new IllegalArgumentException
-      else
-        c.flatMap{case (k,v) => parameters(k).get(v)}
+      if (n.min < -1)
+        throw new IndexOutOfBoundsException(n.min.toString)
+      if (n.max >= parameters.size)
+        throw new IndexOutOfBoundsException(n.max.toString)
+      c.flatMap{case (k,v) => (op :: parameters)(k+1).get(v)}
   }
 
   override def get[T](tree: PathTree[T]): TraversableOnce[(T, Exp)] = tree match {
     case PathTree.Empty => Nil
     case PathTree.Leaf(l) => List(l -> this)
     case n @ PathTree.Node(c) =>
-      if (n.min < -1 || n.max >= parameters.size)
-        throw new IndexOutOfBoundsException
-      else
-        c.flatMap{case (k,v) => (op :: parameters)(k+1).get(v)}
+      if (n.min < -1)
+        throw new IndexOutOfBoundsException(n.min.toString)
+      if (n.max >= parameters.size)
+        throw new IndexOutOfBoundsException(n.max.toString)
+      c.flatMap{case (k,v) => (op :: parameters)(k+1).get(v)}
   }
 
   override def set(map: Map[Variable, Exp]): Exp = Operation(op.set(map), parameters.map(_.set(map)))
@@ -181,4 +192,10 @@ case class Operation(op: Exp, parameters: List[Exp]) extends Exp {
       else
         Operation(op.replace(n(-1), func), (parameters.indices zip parameters).map{case (i,e) => e.replace(n(i), func)}.toList)
   }
+
+  override def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])] =
+    exp match {
+      case Operation(o, ps) => (Option((bounds, params)) /: ((op :: parameters) zip (o :: ps)))((re, e) => re.flatMap{case (b, p) => e._1.matchExp(e._2, b, p)})
+      case _ => None
+    }
 }

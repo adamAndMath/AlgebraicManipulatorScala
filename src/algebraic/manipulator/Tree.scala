@@ -9,6 +9,8 @@ sealed trait Tree {
     case Tree.Leaf => this
     case Tree.Node(c) => Tree.Node(c.mapValues(v => v::this))
   }
+
+  def toPaths: List[List[Int]]
 }
 
 object Tree {
@@ -24,6 +26,8 @@ object Tree {
     }
 
     override def :>[T](leaf: T): PathTree[T] = PathTree.Leaf(leaf)
+
+    override def toPaths: List[List[Int]] = List(Nil)
 
     override def toString: String = "[]"
   }
@@ -42,8 +46,10 @@ object Tree {
 
     override def :>[T](leaf: T): PathTree[T] = PathTree.Node(children map {case (k,v) => (k,v:>leaf)})
 
-    def min(): Int = children.keys.min
-    def max(): Int = children.keys.max
+    override def toPaths: List[List[Int]] = children.toList.flatMap{case(k, t) => t.toPaths.map(k::_)}
+
+    def min: Int = children.keys.min
+    def max: Int = children.keys.max
 
     override def toString: String = {
       val c = children.map{ case (i, t) => t match {

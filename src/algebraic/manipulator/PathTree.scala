@@ -12,6 +12,8 @@ sealed abstract class PathTree[+T] {
 
   def |[B >: T](other: PathTree[B]): PathTree[B]
 
+  def dropVal: Tree
+
   def filter(predicate: T => Boolean): PathTree[T]
   def map[U](map: T => U): PathTree[U]
 }
@@ -24,6 +26,7 @@ object PathTree {
     override val isEmpty: Boolean = true
     override def ::(other: Tree): PathTree[Nothing] = Empty
     override def |[B](other: PathTree[B]): PathTree[B] = other
+    override def dropVal: Tree = throw new IndexOutOfBoundsException
     override def filter(predicate: Nothing => Boolean): PathTree[Nothing] = Empty
     override def map[U](map: Nothing => U): PathTree[U] = Empty
   }
@@ -35,6 +38,8 @@ object PathTree {
       case Leaf(l) => if (leaf.equals(l)) Leaf(leaf) else throw new IllegalArgumentException
       case Node(_) => throw new IllegalArgumentException
     }
+
+    override def dropVal: Tree = Tree.empty
 
     override def filter(predicate: T => Boolean): PathTree[T] = if (predicate(leaf)) this else Empty
 
@@ -59,6 +64,8 @@ object PathTree {
       )
     }
 
+    override def dropVal: Tree = Tree.Node(children.mapValues(_.dropVal))
+
     override def filter(predicate: T => Boolean): PathTree[T] = {
       val c = children.mapValues(_.filter(predicate)).filter{_._2.nonEmpty}
 
@@ -67,8 +74,8 @@ object PathTree {
 
     override def map[U](map: T => U): PathTree[U] = Node(children.mapValues(_.map(map)))
 
-    def min(): Int = children.keys.min
-    def max(): Int = children.keys.max
+    def min: Int = children.keys.min
+    def max: Int = children.keys.max
 
     override def toString: String = {
       val c = children.map{ case (i, t) => s"$i,$t" }

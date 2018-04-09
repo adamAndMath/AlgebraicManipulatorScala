@@ -25,8 +25,8 @@ work Factor<x>(Complex -> Complex f, Complex a) {
     substitute Div.Commute2[0->1]:1,0,1,0
     wrap v -> div(sub(f(add(x,v)),f(x)),v):1,0,1,0,1
     wrap u -> mult(a, u):1,0,1,0
-    substitute Lim.Func[0->1]<h>:1,0
-    wrap x -> lim(0, h -> div(sub(f(add(x,h)),f(x)),h)):1,0,0
+    substitute Lim.Func[0->1]:1,0
+    wrap x -> lim(0, v -> div(sub(f(add(x,v)),f(x)),v)):1,0,0
     wrap diff:1,0,0,-1
 } result {
     diff(x -> mult(a, f(x))) = x -> mult(a, diff(f)(x))
@@ -42,7 +42,7 @@ work Distribute<x>(Complex -> Complex f, Complex -> Complex g) {
     substitute Div.Distribute:1,0,1,0
     wrap v -> div(sub(f(add(x,v)),f(x)),v):1,0,1,0,0
     wrap v -> div(sub(g(add(x,v)),g(x)),v):1,0,1,0,1
-    substitute Lim.Func2<h>:1,0;
+    substitute Lim.Func2:1,0;
     wrap x -> lim(0,v -> div(sub(f(add(x,v)),f(x)),v)):1,0,0
     wrap x -> lim(0,v -> div(sub(g(add(x,v)),g(x)),v)):1,0,1
     wrap diff:1,0,[0|1],-1
@@ -55,8 +55,8 @@ work DistributeSub<x>(Complex -> Complex f, Complex -> Complex g) {
     substitute Sub.AsAdd:1,0,0
     substitute Mult.Sub:1,0,0,1
     wrap x -> mult(sub(0,1),g(x)):1,0,0,1
-    substitute Distribute<x>:1
-    substitute Factor<x>:1,0,1,-1
+    substitute Distribute:1
+    substitute Factor:1,0,1,-1
     unwrap:1,0,1
     substitute ~Mult.Sub:1,0,1
     substitute ~Sub.AsAdd:1,0
@@ -86,25 +86,25 @@ work Product<x,h>(Complex -> Complex f, Complex -> Complex g) {
 
     wrap h -> add(mult(mult(h,div(sub(f(add(x,h)),f(x)),h)),div(sub(g(add(x,h)),g(x)),h)),mult(div(sub(f(add(x,h)),f(x)),h),g(x))):1,0,1,0,0
     wrap h -> mult(f(x),div(sub(g(add(x,h)),g(x)),h)):1,0,1,0,1
-    substitute Lim.Func2<h>:1,0;
+    substitute Lim.Func2:1,0;
 
     wrap h -> mult(mult(h,div(sub(f(add(x,h)),f(x)),h)),div(sub(g(add(x,h)),g(x)),h)):1,0,0,1,0,0
     wrap h -> mult(div(sub(f(add(x,h)),f(x)),h),g(x)):1,0,0,1,0,1
-    substitute Lim.Func2<h>:1,0,0
+    substitute Lim.Func2:1,0,0
 
     wrap h -> mult(h,div(sub(f(add(x,h)),f(x)),h)):1,0,0,0,1,0,0
     wrap h -> div(sub(g(add(x,h)),g(x)),h):1,0,0,0,1,0,1
-    substitute Lim.Func2<h>:1,0,0,0
+    substitute Lim.Func2:1,0,0,0
 
     wrap h -> h:1,0,0,0,0,1,0,0
     wrap h -> div(sub(f(add(x,h)),f(x)),h):1,0,0,0,0,1,0,1
-    substitute Lim.Func2<h>:1,0,0,0,0
+    substitute Lim.Func2:1,0,0,0,0
 
     wrap h -> div(sub(f(add(x,h)),f(x)),h):1,0,0,1,1,0,0
     wrap h -> div(sub(g(add(x,h)),g(x)),h):1,0,1,1,0,1
     wrap h -> mult(h,g(x)):1,0,0,1,1,0
     wrap h -> mult(f(x),h):1,0,1,1,0
-    substitute Lim.Func[0->1]<h>:1,0,[0,1|1]
+    substitute Lim.Func[0->1]:1,0,[0,1|1]
     unwrap:1,0,[0,1|1]
     wrap x -> lim(0,h -> div(sub(f(add(x,h)),f(x)),h)):1,0,0,[0,0,1|1,0]
     wrap x -> lim(0,h -> div(sub(g(add(x,h)),g(x)),h)):1,0,[0,0|1],1
@@ -127,12 +127,15 @@ work Chain<x>(Complex -> Complex f, Complex -> Complex g) {
     substitute ~Div.DivMult(-,sub(g(add(x,h)),g(x))):1,0,1,0;
     substitute Div.Commute2[2->1]:1,0,1,0,0;
     substitute Div.Commute2[0->2]:1,0,1,0;
-    wrap h -> div(sub(f(add(g(x),sub(g(add(x,h))))),f(g(x))),sub(g(add(x,h)),g(x))):1,0,1,0,0
+    wrap h -> div(sub(f(add(g(x),sub(g(add(x,h)),g(x)))),f(g(x))),sub(g(add(x,h)),g(x))):1,0,1,0,0
     wrap h -> div(sub(g(add(x,h)),g(x)),h):1,0,1,0,1
-    substitute Lim.Func2<h>:1,0
+    substitute Lim.Func2:1,0
     wrap h -> div(sub(f(add(g(x),h)),f(g(x))),h):1,0,0,1,0
     wrap h -> sub(g(add(x,h)),g(x)):1,0,0,1,0,0
-    substitute Lim.Func[0->2]<h>:1,0,0
+    substitute Lim.Func[0->2]:1,0,0
+    unwrap:1,0,0,0
+    substitute Add.IdentityRight:1,0,0,0,0,0
+    substitute Sub.Inverse:1,0,0,0
     wrap x -> lim(0, h -> div(sub(f(add(x,h)),f(x)),h)):1,0,0
     wrap x -> lim(0, h -> div(sub(g(add(x,h)),g(x)),h)):1,0,1
     wrap diff:1,0,[0|1],-1
@@ -149,7 +152,7 @@ work Constant<x>(Complex a) {
     substitute Lim.Resolve:1,0;
     unwrap:1,0
 } result {
-    diff(a,x)=0
+    diff(x -> a)=x -> 0
 }
 
 work Line<x>() {
@@ -158,12 +161,12 @@ work Line<x>() {
     unwrap:1,0,1,0,0,[0|1]
 	substitute Add.Commute:1,0,1,0,0,0;
 	substitute Sub.SubAdd:1,0,1,0,0;
-	substitute Lim.Div<h>:1,0;
+	substitute Lim.Div:1,0;
 } result {
 	diff(x -> x)=x -> 1
 }
 
-work Ln<x,h>() {
+work Ln<x>() {
 	let 2 diff(ln);
     unwrap:1
 	substitute ~Ln.DistributeSub:1,0,1,0,0;
@@ -175,11 +178,11 @@ work Ln<x,h>() {
 	substitute ~Ln.Mult:1,0,1,0,0;
 	wrap h -> pow(add(1,div(h,x)),div(1,div(h,x))):1,0,1,0,0,0
 	wrap u -> div(ln(u),x):1,0,1,0
-	substitute Lim.Func[0->1]<h>:1,0;
+	substitute Lim.Func[0->1]:1,0;
 	unwrap:1,0
 	wrap h -> pow(add(1,h),div(1,h)):1,0,0,0,1,0
 	wrap h -> div(h,x):1,0,0,0,1,0,0
-	substitute Lim.Func[0->2]<h>:1,0,0,0;
+	substitute Lim.Func[0->2]:1,0,0,0;
 	unwrap:1,0,0,0,0
 	substitute ~Div.Singularity:1,0,0,0,0;
 	wrap e:1,0,0,0;
@@ -194,23 +197,23 @@ work Log<x>(Complex a) {
 	substitute Div.AsMult:1,0,0;
 	substitute Mult.Commute:1,0,0;
 	//toeval(b:[0]):1,0,1;
-	substitute Factor<x>:1;
+	substitute Factor:1;
 	//fromeval:1,1,0;
-	substitute Ln<x,h>:1,0,1,-1;
+	substitute Ln<x>:1,0,1,-1;
 	unwrap:1,0,1;
 	substitute ~Div.AsMult:1,0;
 	substitute Div.Commute[0->2]:1,0;
 } result {
-	diff(x -> log(a,x),x)=x -> div(1,mult(ln(a),x))
+	diff(x -> log(a,x))=x -> div(1,mult(ln(a),x))
 }
 
 work Exp<x>() {
 	let 2 diff(x -> ln(pow(e,x)))
 	substitute Ln.Pow[1->0]:1,0,0
 	wrap x -> pow(e,x):0,0,0,0
-	substitute Chain<x>:0
-	substitute Ln<x,h>:0,0,0,-1
-	substitute Line<x>:1
+	substitute Chain:0
+	substitute Ln<x>:0,0,0,-1
+	substitute Line:1
 	unwrap:0,0,0
 	unwrap:0,0,0,1
 	substitute Mult.Commute:0,0
@@ -230,14 +233,14 @@ work Exponential<x>(Complex a) {
 	substitute Pow.Combine:1,0,0
 	wrap x -> mult(ln(a),x):1,0,0,1
 	wrap x -> pow(e,x):1,0,0
-	substitute Chain<x>:1
+	substitute Chain:1
 	wrap x -> x:1,0,1,-1,0,0,1
-    substitute Factor<x>:1,0,1,-1
-    substitute Line<x>:1,0,1,-1,0,1,-1
+    substitute Factor:1,0,1,-1
+    substitute Line:1,0,1,-1,0,1,-1
     unwrap:1,0,1,-1,0,1
     substitute Mult.IdentityRight:1,0,1,-1,0
     unwrap:1,0,[0,0|1]
-	substitute Exp<x>:1,0,0,-1
+	substitute Exp:1,0,0,-1
 	unwrap:1,0,0
 	substitute ~Pow.Combine:1,0,0
 	substitute Ln.Pow[2->0]:1,0,0,0
@@ -252,13 +255,13 @@ work Pow<x>(Complex n) {
 	substitute Pow.Combine:1,0,0
 	wrap x -> mult(ln(x),n):1,0,0,1
 	wrap x -> pow(e,x):1,0,0
-	substitute Chain<x>:1
+	substitute Chain:1
 	unwrap:1,0,0,0
 	substitute Mult.Commute:1,0,1,-1,0,0
-	substitute Factor<x>:1,0,1,-1
+	substitute Factor:1,0,1,-1
 	unwrap:1,0,1
-	substitute Ln<x,h>:1,0,1,1,-1
-	substitute Exp<x>:1,0,0,-1
+	substitute Ln<x>:1,0,1,1,-1
+	substitute Exp:1,0,0,-1
 	unwrap:1,0,[0|1,1]
 	substitute ~Mult.Associate:1,0
 	substitute Mult.Commute:1,0,0

@@ -140,11 +140,11 @@ object ProofReader {
 
       (path, ft.getOrElse(0->1), t2)
     }
-    val (dum, t2) = t1.whenBlock(LESSGREAT, _.readList(COMMA, readVariable))
+    val (dum, t2) = t1.whenBlock(LESSGREAT, _.readList(COMMA, _.option(DASH, readVariable)))
     val (par, t3) = t2.whenBlock(PARENTHESES, _.readList(COMMA, _.option(DASH, readExp)))
     val (pos, t4) = readTree(t3.expect(COLON))
 
-    (Substitute(pos, Path(path), from, to, dum.getOrElse(List.empty), par), t4)
+    (Substitute(pos, Path(path), from, to, dum, par), t4)
   }
 
   def readRename(tokens: Tokens): Read[Rename] = {

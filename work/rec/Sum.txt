@@ -223,7 +223,7 @@ induction Commute<i,j>((Integer,Integer) -> Complex f, Integer a1, Integer b1, I
         unwrap:[0|1,0,0],1
         wrap j -> sum(i -> f(i,j),a1,sub(b1,1)):1,0,0,0
         wrap j -> f(b1,j):1,0,0,1
-        substitute Distribute<j>:1;
+        substitute Distribute:1;
         call x sub(x,sum(j -> f(b1,j),a2,b2));
         substitute Sub.SubAdd:[0|1];
     }
@@ -261,7 +261,7 @@ induction TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, Intege
         unwrap:[0|1,0,0],1
         wrap j -> sum(i -> f(i,j),j,sub(n,1)):1,0,0,0
         wrap j -> f(n,j):1,0,0,1
-        substitute Distribute<j>:1;
+        substitute Distribute:1;
         substitute ~Sub.AddSub(-,1):1,0,2
         substitute SuccRight:1,0;
         substitute Sub.AddSub:1,0,1,0

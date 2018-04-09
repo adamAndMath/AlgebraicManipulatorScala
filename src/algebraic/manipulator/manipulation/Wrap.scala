@@ -25,9 +25,9 @@ case class Wrap(wrapper: Exp, positions: Tree) extends PathManipulation(position
         wrapper
       case SimpleFunction(Header(_, params), value) =>
         try {
-          val pars = value.matchExp(exp, params.map(_.variable -> None).toMap)
+          val re = value.matchExp(exp, value.getBound.map(_ -> None).toMap, params.map(_.variable -> None).toMap)
             .getOrElse(throw new IllegalStateException(s"Expected substitute of $value, but received $exp"))
-            .map{ case (p, o) => p -> o.getOrElse(throw new IllegalStateException(s"Undefined parameter $p in $exp"))}
+          val pars = re._2.map{ case (p, o) => p -> o.getOrElse(throw new IllegalStateException(s"Undefined parameter $p in $exp"))}
 
           Operation(Variable(name), params.map(d => pars(d.variable)))
         } catch {
@@ -36,9 +36,9 @@ case class Wrap(wrapper: Exp, positions: Tree) extends PathManipulation(position
     }
     case Lambda(params, value) =>
       try {
-        val pars = value.matchExp(exp, params.map(_ -> None).toMap)
+        val re = value.matchExp(exp, Map.empty, params.map(_ -> None).toMap)
           .getOrElse(throw new IllegalStateException(s"Expected substitute of $value, but received $exp"))
-          .map { case (p, o) => p -> o.getOrElse(throw new IllegalStateException(s"Undefined parameter $p in $exp")) }
+        val pars = re._2.map { case (p, o) => p -> o.getOrElse(throw new IllegalStateException(s"Undefined parameter $p in $exp")) }
 
         Operation(Lambda(params, value), params.map(pars))
       } catch {
