@@ -34,7 +34,7 @@ case class Unwrap(positions: Tree) extends PathManipulation(positions) {
             if ((base.inductive :: step.params.map(_.variable)).forall(inner.contains)) {
               val indPar = step.step.set(inner)
               if (indPar == inductive) {
-                val newParMap = parMap + (base.inductive -> indPar)
+                val newParMap = parMap ++ inner
                 return step.exp.set(newParMap)
               }
             }

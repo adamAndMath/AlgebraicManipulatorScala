@@ -1,5 +1,6 @@
 package algebraic.manipulator.latex
 
+import java.nio.file.Paths
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -8,11 +9,17 @@ import algebraic.manipulator._
 import algebraic.manipulator.function._
 import algebraic.manipulator.manipulation._
 import algebraic.manipulator.objects._
+import algebraic.manipulator.options.Options
 import algebraic.manipulator.structure._
 
 object LatexWriter {
   var expWriter: ExpWriter = ExpWriter(Map.empty, Map.empty, Nil)
   var colors = List("red", "blue", "olive", "orange", "yellow")
+  var title = ""
+  var author = ""
+  var hyperlink = true
+  var definitions = true
+  var color = true
 
   sealed trait ElementLocation
   case object AssumptionLocation extends ElementLocation
@@ -20,14 +27,17 @@ object LatexWriter {
   case object ProofLocation extends ElementLocation
   case object IgnoredLocation extends ElementLocation
 
-  def apply(project: Project, title: String, author: String): String = {
-    def getFiles(sub: Project, path: Path): List[WorkFile] = sub match {
-      case f: Project.Folder =>
-        Graph.topologicalSort[String, Project](f.map, (k, p) => p.dependencies(project, path + k).filter(_.parent == path).map(_.last))
-          .flatMap{case (k, p) => getFiles(p, path + k)}
-      case Project.File(file) => List(file)
-    }
+  def registerOptions(): Unit = {
+    Options += ("title", 1, args => title = args.head)
+    Options += ("author", 1, args => author = args.head)
+    Options += ("link", 1, args => hyperlink = Options.bool(args.head))
+    Options += ("defs", 1, args => definitions = Options.bool(args.head))
+    Options += ("color", 1, args => color = Options.bool(args.head))
+    Options += ("colors", args => colors = args)
+    Options += ("layout", args => expWriter = (expWriter /: args.map(a => ExpWriter(Paths.get(a))))(_ ++ _))
+  }
 
+  def apply(project: Project): String = {
     val date = LocalDate.now()
     "\\documentclass{report}\n" +
       "\\usepackage[utf8]{inputenc}\n" +
@@ -41,7 +51,7 @@ object LatexWriter {
       "\\begin{document}\n\n" +
       "\\maketitle\n" +
       "\\tableofcontents\n\n" +
-      getFiles(project, Path.empty).map(writeFile(project, _)).mkString("\n") +
+      project.getFiles().map(writeFile(project, _)).mkString("\n") +
       "\n\\end{document}"
   }
 
@@ -51,19 +61,18 @@ object LatexWriter {
     val assumptions = file.names.filter(n => getLocation(file.get(n)) == AssumptionLocation)
 
     s"\\chapter{${file.path.last}}\n" +
-      file.names.filter(n => getLocation(file.get(n)) == DefinitionLocation).map(name =>
-        writeElementDefinition(name, file.get(name)) + "\n"
-      ).mkString("\\") +
+      (file.names.filter(n => getLocation(file.get(n)) == DefinitionLocation).map(name =>
+        writeElementDefinition(name, file.get(name))
+      ) ++
       {
         if (assumptions.nonEmpty)
-          "Given the following assumptions:\n" +
+          "Given the following assumptions:" ::
             assumptions.map(name =>
-              "\\\\\n" +
-                s"\\label{${(file.path + name).mkString(":")}}\n" +
+              s"\\label{${(file.path + name).mkString(":")}}\n" +
                 writeAssumption(file.get(name))
-            ).mkString
-        else ""
-      } +
+            )
+        else Nil
+      }).mkString("\\\\\n") + "\n" +
       file.names
         .filter(n => getLocation(file.get(n)) == ProofLocation)
         .map(name => {
@@ -89,8 +98,8 @@ object LatexWriter {
     case InductiveStructure(base, steps) =>
       val typeOut = writeType(SimpleType(name))
       s"Let $$$typeOut$$ be the smallest set that satisfies " +
-        s"$$${writeDefinition(Header(Nil, base.params))}: ${writeExp(base.exp)} \\in $typeOut$$" +
-        steps.map(step => s" and $$${writeDefinition(Header(Nil, Definition(SimpleType(name), step.v.name) :: step.params))}: ${writeExp(step.exp)} \\in $typeOut$$").mkString
+        s"$$${writeDefinition(Header(Nil, base.params))}${writeExp(base.exp)} \\in $typeOut$$" +
+        steps.map(step => s" and $$${writeDefinition(Header(Nil, Definition(SimpleType(name), step.v.name) :: step.params))}${writeExp(step.exp)} \\in $typeOut$$").mkString
     case SimpleFunction(header, exp) => s"Let $$${writeExp(Operation(Variable(name), header.parameters.map(_.variable)))} = ${writeExp(exp)}$$"
     case InductiveFunction(header, base, steps) =>
       s"Let $$${writeExp(Operation(Variable(name), header.parameters.map(_.variable)))} = \n" +
@@ -101,7 +110,7 @@ object LatexWriter {
   }
 
   def writeAssumption(element: Element): String = element match {
-    case a: Assumption => s"$$${writeDefinition(a.header)}: ${a.result.map(writeExp(_)).mkString("=")}$$"
+    case a: Assumption => s"$$${writeDefinition(a.header)}${a.result.map(writeExp(_)).mkString("=")}$$"
   }
 
   def writeElement(env: Environment, element: Element): String = element match {
@@ -186,24 +195,30 @@ object LatexWriter {
     }
     case Wrap(Lambda(params, e), _) =>
       s"Wrapping $$${params.map(writeExp(_)).mkString("(", ", ", ")")} \\rightarrow ${writeExp(e)}$$"
+    case Wrap(_, _) => "Wrapping"
     case Unwrap(_) => "Unwrapping"
   }
 
   def writeIdentityReference(path: Path, header: Header, exps: List[Exp]): String = {
     val parameters = header.parameters.map(_.variable)
     val equation = exps.map(e => writeExp(e, e.tree.filter(parameters.contains).map(v => colors(parameters.indexOf(v)))))
-    s"\\hyperref[${path.mkString(":")}]{$$${writeDefinition(header, v => Some(colors(parameters.indexOf(v))))}: ${equation.mkString("=")}$$}"
+    val str = s"$$${writeDefinition(header, v => Some(colors(parameters.indexOf(v))))}${equation.mkString("=")}$$"
+
+    if (hyperlink) s"\\hyperref[${path.mkString(":")}]{$str}"
+    else str
   }
 
-  def writeDefinition(header: Header, colors: Variable => Option[String] = _ => None): String = header.parameters match {
-    case Nil => ""
-    case par :: Nil =>
-      s"\\forall ${colorText(colors(par.variable), par.name)} \\in ${writeType(par.varType)}"
-    case Definition(varType, _) :: tail if tail.forall(_.varType == varType) =>
-      s"\\forall ${header.parameters.map(_.variable).map(v => colorText(colors(v), v.name)).mkString(",")} \\in ${writeType(varType)}"
-    case parameters =>
-      s"\\forall\\left( ${parameters.map(d => s"${colorText(colors(d.variable), d.name)} \\in ${writeType(d.varType)}").mkString(",")}\\right)"
-  }
+  def writeDefinition(header: Header, colors: Variable => Option[String] = _ => None): String =
+    if (!definitions) ""
+    else header.parameters match {
+      case Nil => ""
+      case par :: Nil =>
+        s"\\forall ${colorText(colors(par.variable), par.name)} \\in ${writeType(par.varType)}: "
+      case Definition(varType, _) :: tail if tail.forall(_.varType == varType) =>
+        s"\\forall ${header.parameters.map(_.variable).map(v => colorText(colors(v), v.name)).mkString(",")} \\in ${writeType(varType)}: "
+      case parameters =>
+        s"\\forall\\left( ${parameters.map(d => s"${colorText(colors(d.variable), d.name)} \\in ${writeType(d.varType)}").mkString(",")}\\right): "
+    }
 
   def writeType(t: Type): String = t match {
     case SimpleType(n) => expWriter.writeType(n)
@@ -218,6 +233,6 @@ object LatexWriter {
   def colorText(color: Option[String], toColor: String): String = if (color.isEmpty) toColor else colorText(color.get, toColor)
   def colorBack(color: Option[String], toColor: String): String = if (color.isEmpty) toColor else colorBack(color.get, toColor)
 
-  def colorText(color: String, toColor: String) = s"\\textcolor{$color}{$toColor}"
-  def colorBack(color: String, toColor: String) = s"\\fcolorbox{$color}{white}{$$$toColor$$}"
+  def colorText(color: String, toColor: String): String = if (this.color) s"\\textcolor{$color}{$toColor}" else toColor
+  def colorBack(color: String, toColor: String): String = if (this.color) s"\\fcolorbox{$color}{white}{$$$toColor$$}" else toColor
 }

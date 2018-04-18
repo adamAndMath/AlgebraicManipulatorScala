@@ -7,6 +7,13 @@ sealed abstract class Project {
   protected def getFile(path: List[String]) : WorkFile
   protected def containsFile(path: List[String]) : Boolean
   def dependencies(root: Project, path: Path): Set[Path]
+
+  def getFiles(sub: Project = this, path: Path = Path.empty): List[WorkFile] = sub match {
+    case f: Project.Folder =>
+      Graph.topologicalSort[String, Project](f.map, (k, p) => p.dependencies(this, path + k).filter(_.parent == path).map(_.last))
+        .flatMap{case (k, p) => getFiles(p, path + k)}
+    case Project.File(file) => List(file)
+  }
 }
 
 object Project {
