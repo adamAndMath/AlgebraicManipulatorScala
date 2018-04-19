@@ -5,6 +5,8 @@ import algebraic.manipulator._
 case class InductiveStructure(base: InductiveBase, steps: List[InductiveStep]) extends Structure {
   override def dependencies(env: Environment): Set[Path] =
     env.dependencies(base :: steps)
+
+  override def validate(env: Environment): Traversable[String] = None
 }
 
 case class InductiveBase(params: List[Definition], exp: Exp) extends Depending {

@@ -15,12 +15,10 @@ case class Header(dummies: List[Variable], parameters: List[Definition]) extends
 
 abstract class Identity(val header: Header, val result: List[Exp]) extends Element {
   assert(result.flatMap(_.getBound).forall(header.dummies.contains))
-
-  def validate(): Boolean
 }
 
 class Assumption(header: Header, result: List[Exp]) extends Identity(header, result) {
-  override def validate(): Boolean = true
+  override def validate(env: Environment): Traversable[String] = None
 
   override def dependencies(env: Environment): Set[Path] =
     env.dependencies(header) ++ header.bind(env).dependencies(result)
@@ -33,7 +31,9 @@ class Proof(header: Header, result: List[Exp], val count: Int, val origin: Exp) 
   def manipulations: List[Manipulation] = manips.reverse
   def current: List[Exp] = cur
 
-  override def validate(): Boolean = (cur zip result).forall(p => p._1 == p._2)
+  override def validate(env: Environment): Traversable[String] =
+    Some(s"The current state ${cur.mkString("=")} isn't equal to the expected result ${result.mkString("=")}")
+      .filter(_ => (cur zip result).exists(p => p._1 != p._2))
 
   override def dependencies(env: Environment): Set[Path] =
     env.dependencies(header) ++ header.bindWithDummies(env).dependencies(origin :: result ++ manips)
@@ -56,7 +56,9 @@ class AssumedProof(header: Header, result: List[Exp], val origin: List[Exp]) ext
   def manipulations: List[Manipulation] = manips.reverse
   def current: List[Exp] = cur
 
-  override def validate(): Boolean = (cur zip result).forall(p => p._1 == p._2)
+  override def validate(env: Environment): Traversable[String] =
+    Some(s"The current state ${cur.mkString("=")} isn't equal to the expected result ${result.mkString("=")}")
+      .filter(_ => (cur zip result).exists(p => p._1 != p._2))
 
   override def dependencies(env: Environment): Set[Path] =
     env.dependencies(header) ++ header.bind(env).dependencies(origin ++ result ++ manips)
@@ -90,7 +92,8 @@ class InductionProof(header: Header, result: List[Exp], val inductives: Map[Vari
     step
   }
 
-  override def validate(): Boolean = base.validate() && steps.values.forall(_.forall(_.proof.validate()))
+  override def validate(env: Environment): Traversable[String] =
+    base.validate(env).map(v => s"base: $v") ++ steps.flatMap{case (k, step) => step.flatMap(s => s.proof.validate(env).map(v => s"$k -> ${s.exp}: $v"))}
 
   override def dependencies(env: Environment): Set[Path] =
     env.dependencies(header) ++ header.bindWithDummies(env).dependencies(base :: origin :: result ++ inductives.values ++ steps.values.flatten)

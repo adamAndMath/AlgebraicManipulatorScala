@@ -4,4 +4,6 @@ import algebraic.manipulator.{Environment, Exp, Path}
 
 case class SimpleObject(exp: Exp) extends ObjectElement {
   override def dependencies(env: Environment): Set[Path] = env.dependencies(exp)
+
+  override def validate(env: Environment): Traversable[String] = None
 }

@@ -7,6 +7,8 @@ case class InductiveFunction(header: Header, base: InductiveBase, steps: List[In
 
   override def dependencies(env: Environment): Set[Path] =
     env.dependencies(header) ++ header.bind(env).dependencies(base :: steps)
+
+  override def validate(env: Environment): Traversable[String] = None
 }
 
 case class InductiveBase(inductive: Variable, value: Exp, exp: Exp) extends Depending {

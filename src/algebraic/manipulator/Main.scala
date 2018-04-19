@@ -22,6 +22,16 @@ object Main {
     val projectTemplate = ProofReader.readProject(Paths.get(projects.head))
     val project = projectTemplate()
 
+    if (safe) {
+      val errs = project.getFiles().flatMap(file => {
+        val env = file.env(project)
+        file.names.flatMap(name => file.get(name).validate(env).map(v => s"${file.path}: $name: $v"))
+      })
+
+      if (errs.nonEmpty)
+        throw new IllegalStateException("Validation errors:\n"+errs.mkString("\n"))
+    }
+
     Files.write(Paths.get(output), LatexWriter(project).getBytes)
   }
 }
