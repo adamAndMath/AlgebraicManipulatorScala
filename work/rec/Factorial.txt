@@ -1,0 +1,54 @@
+import Numbers.Natural
+import base.Add.add
+import base.Mult.mult
+import rec.Prod.prod
+using base.Add
+using base.Sub
+using base.Mult
+
+inductive fn factorial(Natural n) {
+    base n=0 => 1
+    step add(n,1) => mult(add(n,1),factorial(n))
+}
+
+work Zero() {
+    let 2 factorial(0)
+    unwrap:1
+} result {
+    factorial(0) = 1
+}
+
+work One() {
+    let 2 factorial(1)
+    substitute ~Add.IdentityLeft:1,0
+    unwrap:1
+    substitute Add.IdentityLeft:1,0
+    unwrap:1,1
+    substitute Mult.IdentityLeft:1
+} result {
+    factorial(1) = 1
+}
+
+work Succ(Natural n) {
+    let 2 factorial(add(n,1))
+    unwrap:1
+} result {
+    factorial(add(n,1))=mult(add(n,1),factorial(n))
+}
+
+induction Prod<i>(Natural n) {
+    base n = 0 {
+        let 2 1
+        substitute ~Zero:0
+        substitute ~Prod.Identity(i->i,1):1
+        substitute Sub.Inverse:1,2
+    } n -> add(n,1) {
+        call x mult(add(n,1),x)
+        substitute ~Succ:0
+        substitute Mult.Commute:1
+        wrap i -> i:1,1
+        substitute ~Prod.SuccRight:1
+    }
+} result {
+    factorial(n)=prod(i->i,1,n)
+}

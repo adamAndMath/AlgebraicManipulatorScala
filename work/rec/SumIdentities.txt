@@ -19,9 +19,8 @@ work GeometricSum<i>(Complex a, Integer n) {
     substitute Pow.Definition:1,0,0
     wrap i -> pow(a,sub(i,1)):1,0,0,1
     substitute ~Sum.Factor:1
-    substitute ~Sub.AddSub(-,1):1,1,[1|2]
     wrap i -> pow(a,i):1,1,0,0
-    substitute ~Sum.IndexShift:1,1
+    substitute Sum.IndexShiftSub:1,1
     substitute Sum.PredLeft:1,1
     unwrap:1,1,0
     substitute Mult.Distribute:1

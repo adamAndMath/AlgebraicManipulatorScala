@@ -37,6 +37,7 @@ induction PredLeft(Integer -> Complex f, Integer a, Integer b) {
         substitute SuccRight:1
         substitute Single:1,0
         substitute ~Single:1,1
+        substitute Sub.AddSub:1,1,[1|2]
     } b -> add(b,1) {
         call x add(x,f(add(b,1)))
         substitute Add.Associate:1
@@ -66,30 +67,43 @@ work Identity(Integer -> Complex f, Integer a) {
 }
 
 induction IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
-    base b = a {
-        let 2 sum(f,a,a)
-        substitute Single:1
-        substitute ~Sub.SubAdd(-,c):1,0
-        wrap i -> f(sub(i,c)):1
-        substitute ~Single:1
+    base b = sub(a,1) {
+        let 2 0
+        substitute ~Identity(i -> f(add(i,c)),a):0
+        substitute ~Identity(f,add(a,c)):1
+        substitute Sub.Commute2[0->2]:1,2
     } b -> add(b,1) {
-        call x add(x,f(add(b,1)))
-        substitute ~Sub.SubAdd(-,c):1,1,0
-        wrap i -> f(sub(i,c)):1,1
-        substitute Add.Associate:1,1,0
-        substitute Add.Commute:1,1,0,1
-        substitute ~Add.Associate:1,1,0
+        call x add(x,f(add(add(b,c),1)))
+        substitute Add.OuterCommute:0,1,0
+        wrap i -> f(add(i,c)):0,1
         substitute ~SuccRight:[0|1]
-        substitute Add.Associate:1,2
-        substitute Add.Commute:1,2,1
-        substitute ~Add.Associate:1,2
+        substitute Add.OuterCommute:1,2
+    } b -> sub(b,1) {
+        substitute ~Sub.AddSub(-,1):[0|1],2
+        substitute SuccRight:[0|1]
+        substitute Sub.AddSub:[0|1],1,0
+        unwrap:0,1
+        call x sub(x,f(add(b,c)))
+        substitute Sub.SubAdd:[0|1]
+        substitute Sub.Commute2[0->2]:1,2
     }
 } result {
-    sum(f,a,b)=sum(i->f(sub(i,c)),add(a,c),add(b,c))
+    sum(i -> f(add(i,c)),a,b)=sum(f,add(a,c),add(b,c))
+}
+
+work IndexShiftSub<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
+    let 2 sum(i -> f(sub(i,c)),a,b)
+    substitute ~Sub.AddSub(-,c):1,[1|2]
+    substitute ~IndexShift<i>:1
+    unwrap:1,0,0
+    substitute Sub.SubAdd:1,0,0,0
+    unwrap:1,0
+} result {
+    sum(i -> f(sub(i,c)),a,b)=sum(f,sub(a,c),sub(b,c))
 }
 
 induction Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
-    base b=0 {
+    base b=a {
         let 2 sum(f,a,a)
         substitute Single:1
         substitute Sub.Negate:1,0
@@ -120,6 +134,21 @@ induction Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
     }
 } result {
     sum(f,a,b)=sum(i -> f(sub(0,i)),sub(0,b),sub(0,a))
+}
+
+work FixedReverse<i>(Integer -> Complex f, Integer a, Integer b) {
+    let 2 sum(f,a,b)
+    substitute Reverse<i>:1
+    substitute ~Sub.Inverse(a):1,1,0
+    substitute ~Sub.Inverse(b):1,2,0
+    substitute Sub.Commute[0->2]:1,[1|2]
+    substitute Add.Commute:1,2,1
+    substitute ~IndexShiftSub<i>:1
+    unwrap:1,0,0
+    substitute Sub.Commute2[3->0]:1,0,0,0
+    substitute Add.IdentityLeft:1,0,0,0,0
+} result {
+    sum(f,a,b)=sum(i -> f(sub(add(a,b),i)),a,b)
 }
 
 induction RangeSplit(Integer -> Complex f, Integer a, Integer b, Integer c) {
@@ -177,9 +206,7 @@ induction Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer a, I
         call x add(x,add(f(add(b,1)),g(add(b,1))))
 
         substitute ~Add.Associate:1
-        substitute Add.Associate:1,0
-        substitute Add.Commute:1,0,1
-        substitute ~Add.Associate:1,0
+        substitute Add.OuterCommute:1,0
         substitute Add.Associate:1
 
         wrap i -> add(f(i),g(i)):0,1
@@ -191,9 +218,7 @@ induction Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer a, I
         substitute Sub.AddSub:[0,1,[0|1]|1,[0|1],1],0;
 
         substitute ~Add.Associate:1;
-        substitute Add.Associate:1,0;
-        substitute Add.Commute:1,0,1;
-        substitute ~Add.Associate:1,0;
+        substitute Add.OuterCommute:1,0
         substitute Add.Associate:1;
 
         call x sub(x,add(f(b),g(b)));
@@ -201,6 +226,17 @@ induction Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer a, I
     }
 } result {
     sum(i -> add(f(i),g(i)),a,b)=add(sum(f,a,b),sum(g,a,b))
+}
+
+work DistributeSub<i>(Integer -> Complex f, Integer -> Complex g, Integer a, Integer b) {
+    let 2 sum(i -> sub(f(i),g(i)),a,b)
+    substitute ~Sub.SubAdd(-,sum(g,a,b)):1
+    substitute ~Distribute<i>:1,0
+    unwrap:1,0,0,0,0
+    substitute Sub.AddSub:1,0,0,0
+    unwrap:1,0,0
+} result {
+    sum(i -> sub(f(i),g(i)),a,b)=sub(sum(f,a,b),sum(g,a,b))
 }
 
 induction Commute<i,j>((Integer,Integer) -> Complex f, Integer a1, Integer b1, Integer a2, Integer b2) {
@@ -275,3 +311,29 @@ induction TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, Intege
 } result {
     sum(i -> sum(j -> f(i,j),a,i),a,n)=sum(j -> sum(i -> f(i,j),j,n),a,n)
 }
+
+/*induction Zip<i,j>(Integer -> Complex f, Integer n, Integer z) {
+    base n = sub(0,1) {
+        let 2 0
+        substitute ~Identity(i -> sum(j -> f(add(mult(z,i),j)),0,z),0):0
+        substitute ~Identity(f,add(mult(z,sub(0,1)),z)):1
+        substitute Mult.DistributeSub:1,1,0
+        substitute Mult.Singularity[2->0]:1,1,0,0
+        substitute Mult.IdentityRight:1,1,0,1
+        substitute ~Add.Commute:1,1
+        substitute ~Sub.AsAdd:1,1
+        substitute Sub.Inverse:1,1
+    } n -> add(n,1) {
+        call x add(x,sum(f,add(mult(z,n),z),sub(add(mult(z,add(n,1)),z),1)))
+        wrap i -> f(i):0,1,0
+        substitute ~Sub.SubAdd(-,add(mult(z,n),z)):0,1,0,0,0
+        wrap j -> sub(j,add(mult(z,n),z)):0,1,0,0
+        substitute ~Add.IdentityLeft:0,1,1
+        substitute ~Mult.DistributeSub:0,1,2,0
+        substitute ~Mult.IdentityRight:0,1,2,0,1
+        substitute Sub.Commute2[0->1]:0,1,2
+        substitute ~IndexShift:0,1
+    }
+} result {
+    sum(i -> sum(j -> f(add(mult(z,i),j)),0,sub(z,1)),0,n)=sum(f,0,sub(add(mult(z,n),z),1))
+}*/

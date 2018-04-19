@@ -19,6 +19,8 @@ exp(i,f,a,b) sum(i->f,a,b) => "\displaystyle\sum_{"+i+"="+a+"}^{"+b+"}"+f:2
 exp(i,f,a,b) prod(i->f,a,b) => "\displaystyle\prod_{"+i+"="+a+"}^{"+b+"}"+f:2
 exp(f,a,b) sum(f,a,b) => "\displaystyle\sum_{"+a+".."+b+"}"+f:2
 exp(f,a,b) prod(f,a,b) => "\displaystyle\prod_{"+a+".."+b+"}"+f:2
+exp(n) factorial(n) => (n:inf+"!"):3
+exp(n,k) binom(n,k) => "\binom{"+n+"}{"+k+"}"
 exp(i,f,a) lim(a,i->f) => "\displaystyle\lim_{"+i+" \rightarrow "+a+"}\left("+f+"\right)"
 exp(f,a) lim(a,f) => "\displaystyle\lim_{"+a+"}\left("+f+"\right)"
 exp(f,x) diff(x -> f)(x) => "\frac{\mathrm d}{\mathrm d "+[0]+"}"+f:inf

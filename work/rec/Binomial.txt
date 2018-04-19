@@ -1,0 +1,239 @@
+import Numbers.Complex
+import Numbers.Integer
+import Numbers.Natural
+import base.Add.add
+import base.Sub.sub
+import base.Mult.mult
+import base.Div.div
+import base.Pow.pow
+import rec.Sum.sum
+import rec.Prod.prod
+import rec.Factorial.factorial
+using base.Add
+using base.Sub
+using base.Mult
+using base.Div
+using base.Pow
+
+//define fn binom(Integer n, Integer k) = prod(i -> div(sub(add(n,1),i),i),1,k)
+
+inductive fn binom(Integer n, Integer k) {
+    base k=0 => 1
+    step add(k,1) => sum(i -> binom(i,k),k,sub(n,1))
+}
+
+work SingularityRight(Natural n) {
+    let 2 binom(n,0)
+    unwrap:1
+} result {
+    binom(n,0)=1
+}
+
+induction Matching(Natural n) {
+    base n=0 {
+        let 2 binom(0,0)
+        unwrap:1
+    } n -> add(n,1) {
+        let 2 binom(add(n,1),add(n,1))
+        unwrap:1
+        substitute Sub.SubAdd:1,2
+        substitute Sum.Single:1
+        unwrap:1
+        substitute step:1
+    }
+} result {
+    binom(n,n)=1
+}
+
+work AddSucc(Integer n, Integer k) {
+    let 2 binom(add(n,1),add(k,1))
+    unwrap:1
+    substitute Sub.Commute2[0->2]:1,2
+    substitute Sum.SuccRight:1
+    unwrap:1,1
+    substitute Sub.AddSub:1,1,0
+    wrap binom(n,add(k,1)):1,0
+    substitute Add.Commute:1
+} result {
+    binom(add(n,1),add(k,1))=add(binom(n,k),binom(n,add(k,1)))
+}
+
+work AddSuccLeft(Integer n, Integer k) {
+    let 2 binom(add(n,1),k)
+    substitute ~Sub.AddSub(-,1):1,1
+    substitute AddSucc:1
+    substitute Sub.AddSub:1,1,1
+} result {
+    binom(add(n,1),k)=add(binom(n,sub(k,1)),binom(n,k))
+}
+
+/*induction Factorial(Integer n, Integer k) {
+    base k=0 {
+        let 2 binom(n,0)
+        substitute SingularityRight:1
+        substitute ~Div.Inverse(factorial(n)):1
+        substitute ~Mult.IdentityLeft:1,1
+        substitute ~Factorial.Zero:1,1,0
+        substitute ~Sub.IdentityRight:1,1,1,0
+    } k -> add(k,1) {
+        let 2 binom(n,add(k,1))
+        unwrap:1
+        substitute step:1,0,0
+    }
+} result {
+    binom(n,k)=div(factorial(n),mult(factorial(k),factorial(sub(n,k))))
+}
+
+
+induction SuccLeft(Integer n, Integer k) {
+    base k=0 {
+        let 2 binom(add(n,1),0)
+        substitute SingularityRight:1
+        substitute ~Mult.IdentityRight:1
+        substitute ~SingularityRight(n):1,0
+        substitute ~Div.Inverse(add(n,1)):1,1
+        substitute ~Sub.IdentityRight:1,1,0,0
+    } k -> add(k,1) {
+        let 2 binom(add(n,1),add(k,1))
+        unwrap:1
+        substitute ~Sub.AddSub(-,1):1,0,0,0
+        //substitute step:1,0,0
+    }
+} result {
+    binom(add(n,1),k)=mult(binom(n,k),div(add(sub(n,k),1),add(n,1)))
+}
+
+/*work SuccRight(Natural n, Natural k) {
+    let 2 binom(n,add(k,1))
+} result {
+    binom(n,add(k,1))=mult(???,binom(n,k))
+}
+
+work Succ(Natural n, Natural k) {
+    let 2 binom(add(n,1),add(k,1))
+} result {
+    binom(add(n,1),add(k,1))=mult(???,binom(n,k))
+}
+
+work PredLeft(Natural n, Natural k) {
+    let 2 binom(sub(n,1),k)
+} result {
+    binom(sub(n,1),k)=mult(???,binom(n,k))
+}
+
+work PredRight(Natural n, Natural k) {
+    let 2 binom(n,sub(k,1))
+} result {
+    binom(n,sub(k,1))=mult(???,binom(n,k))
+}
+
+work Pred(Natural n, Natural k) {
+    let 2 binom(sub(n,1),sub(k,1))
+} result {
+    binom(sub(n,1),sub(k,1))=mult(???,binom(n,k))
+}*/
+
+induction Coefficients<i>(Complex a, Complex b, Natural n) {
+    base n = 0 {
+        let 2 pow(add(a,b),0)
+        substitute Pow.Singularity:1
+        wrap binom(0,0):1
+        substitute ~Mult.IdentityRight:1
+        substitute ~Pow.Singularity(a):1,1
+        substitute ~Mult.IdentityRight:1
+        substitute ~Pow.Singularity(b):1,1
+        substitute ~Sub.Inverse(0):1,1,1
+        wrap i -> mult(mult(binom(0,i),pow(a,i)),pow(b,sub(0,i))):1
+        substitute ~Sum.Single:1
+    } n -> add(n,1) {
+        call x mult(x,add(a,b))
+        substitute ~Pow.Identity:0,1
+        substitute ~Pow.Definition:0
+        substitute Mult.Distribute:1
+        substitute Mult.Commute:1,[0|1]
+        substitute Sum.Factor<i>:1,[0|1]
+        unwrap:1,[0|1],0,0,1
+        substitute Mult.Commute:1,[0|1],0,0
+        substitute Mult.OuterCommute:1,0,0,0
+        substitute Mult.Associate:1,[0,0|1],0,0
+        substitute ~Pow.Identity:1,[0,0|1],0,0,1,1
+        substitute ~Pow.Definition:1,[0,0|1],0,0,1
+        substitute ~Sub.SubAdd(-,1):1,0,0,0,[0,0|1,1],1
+        wrap i -> mult(mult(binom(n,sub(i,1)),pow(a,i)),pow(b,sub(n,sub(i,1)))):1,0,0,0
+        substitute Sum.IndexShift:1,0
+        substitute Sub.Commute2[3->2]:1,0,0,0,1,1
+        substitute Sub.Commute2[2->0]:1,[0|1],0,0,1,1
+        substitute Add.IdentityLeft:1,0,1
+        substitute Sum.SuccRight:1,0
+        substitute ~Sub.Inverse(1):1,1,1
+        substitute Sum.PredLeft:1,1
+        unwrap:1,[0,1|1,0]
+        substitute ~Add.Associate:1
+        substitute Add.OuterCommute:1
+        substitute Add.OuterCommute:1,0
+        substitute Sub.Inverse:1,1,[0,[0|1]|1,1],1
+        substitute Sub.SubAdd:1,0,1,0,0,1
+        substitute SingularityRight:1,1,0,0
+        substitute Matching:1,0,1,0,0
+        substitute ~SingularityRight(add(n,1)):1,1,0,0
+        substitute ~Matching(add(n,1)):1,0,1,0,0
+        substitute ~Sum.Distribute<i>:1,0,0
+        unwrap:1,0,0,0,0,[0|1]
+        substitute ~Mult.DistributeRight:1,0,0,0,0
+        substitute ~Mult.DistributeRight:1,0,0,0,0,0
+        substitute ~AddSuccLeft:1,0,0,0,0,0,0
+        wrap i -> mult(mult(binom(add(n,1),i),pow(a,i)),pow(b,sub(add(n,1),i))):1,[0,1|1]
+        substitute ~Sub.Inverse(1):1,1,0
+        substitute ~Sum.SuccRight:1,0
+        substitute Add.Commute:1
+        substitute ~Sum.PredLeft:1
+        substitute Sub.Inverse:1,1
+    }
+} result {
+    pow(add(a,b),n)=sum(i -> mult(mult(binom(n,i),pow(a,i)),pow(b,sub(n,i))),0,n)
+}
+
+/*
+work Prod<i>(Integer n, Integer k) {
+    let 2 binom(n,k)
+    unwrap:1;
+} result {
+    binom(n,k) = prod(i -> div(sub(add(n,1),i),i),1,k)
+}
+
+work Factorial(Natural n, Natural k) {
+    let 2 binom(n,k)
+    substitute Prod<i>:1
+    wrap i -> sub(add(n,1),i):1,0,0,0
+    wrap i -> i:1,0,0,1
+    substitute Prod.DistributeDiv:1
+    substitute Prod.FixedReverse<i>:1,0
+    unwrap:1,0,0,0
+    substitute Sub.Commute2[3->2]:1,0,0,0
+    substitute Sub.Commute[2->0]:1,0,0,0,0
+    substitute Sub.SubAdd:1,0,0,0,0,0
+    substitute Add.Commute:1,0,0,0
+    wrap i -> i:1,0,0,0
+    substitute Prod.IndexShift:1,0
+    substitute Add.Commute:1,0,[1|2]
+    substitute Sub.AddSub:1,0,2
+    substitute ~Div.DivMult(-,prod(i -> i,1,sub(n,k))):1,0
+    substitute Mult.Commute:1,0,0
+    substitute ~Prod.RangeSplit:1,0,0
+    substitute Div.Commute[1->2]:1
+    substitute ~Factorial.Prod:1,[0|1,[0|1]]
+} result {
+    binom(n,k) = div(factorial(n),mult(factorial(k),factorial(sub(n,k))))
+}
+
+work Mirror(Natural n, Natural k) {
+    let 2 binom(n,k)
+    substitute Factorial:1
+    substitute Mult.Commute:1,1
+    substitute ~Sub.SubAdd(-,n):1,1,1,0
+    substitute Add.Commute:1,1,1,0,0
+    substitute Sub.Commute2[0->3]:1,1,1,0
+    substitute ~Factorial:1
+} result {
+    binom(n,k)=binom(n,sub(n,k))
+}*/

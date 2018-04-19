@@ -5,9 +5,6 @@ assume fn add(Complex, Complex)
 assume Commute(Complex a, Complex b)
     add(a,b)=add(b,a)
 
-assume Associate(Complex a, Complex b, Complex c)
-    add(add(a,b),c)=add(a,add(b,c))
-
 assume IdentityRight(Complex a)
     add(a,0)=a
 
@@ -17,4 +14,16 @@ work IdentityLeft(Complex a) {
     substitute IdentityRight:1
 } result {
     add(0,a)=a
+}
+
+assume Associate(Complex a, Complex b, Complex c)
+    add(add(a,b),c)=add(a,add(b,c))
+
+work OuterCommute(Complex a, Complex b, Complex c) {
+    let 2 add(add(a,b),c)
+    substitute Associate:1
+    substitute Commute:1,1
+    substitute ~Associate:1
+} result {
+    add(add(a,b),c)=add(add(a,c),b)
 }

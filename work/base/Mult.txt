@@ -10,9 +10,6 @@ assume Commute(Complex a, Complex b)
 assume Associate(Complex a, Complex b, Complex c)
     mult(mult(a,b),c)=mult(a,mult(b,c));
 
-assume Distribute(Complex f, Complex a, Complex b)
-    mult(f,add(a,b))=add(mult(f,a),mult(f,b));
-
 assume IdentityRight(Complex a)
     mult(a,1)=a
 
@@ -22,6 +19,27 @@ work IdentityLeft(Complex a) {
     substitute IdentityRight:1
 } result {
     mult(1,a)=a
+}
+
+assume Distribute(Complex f, Complex a, Complex b)
+    mult(f,add(a,b))=add(mult(f,a),mult(f,b));
+
+work DistributeRight(Complex a, Complex b, Complex c) {
+    let 2 mult(add(a,b),c)
+    substitute Commute:1
+    substitute Distribute:1
+    substitute Commute:1,[0|1]
+} result {
+    mult(add(a,b),c)=add(mult(a,c),mult(b,c))
+}
+
+work OuterCommute(Complex a, Complex b, Complex c) {
+    let 2 mult(mult(a,b),c)
+    substitute Associate:1
+    substitute Commute:1,1
+    substitute ~Associate:1
+} result {
+    mult(mult(a,b),c)=mult(mult(a,c),b)
 }
 
 work DistributeSub(Complex f, Complex a, Complex b) {
