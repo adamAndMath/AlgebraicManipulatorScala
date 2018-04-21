@@ -17,14 +17,14 @@ case class FileTemplate(path: List[String], using: Map[String, List[String]], im
 
   def apply(name: String, env: Environment): Element = {
     try {
-      val file = new WorkFile(name, env)
-      using.foreach { case (k, p) => file.use(k, p) }
-      imports.foreach(file.importing)
-      identities.foreach {
+      val file = new WorkFile(name, env, using.mapValues(env.find), imports.map(env.find(_).asInstanceOf[Environment]))
+      identities.foreach{
         case (key, ide) =>
           try {
             file += (key -> ide.apply(file))
-          } catch { case e: Exception => throw new IllegalStateException(s"Failed to build $key", e)}
+          } catch {
+            case e: Exception => throw new IllegalStateException(s"Failed to build $key", e)
+          }
       }
       file
     } catch {
