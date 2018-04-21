@@ -1,16 +1,15 @@
-import Numbers.Complex;
-import Numbers.Integer;
-import base.Add.add;
-import base.Sub.sub;
-import base.Mult.mult;
-import base.Div.div;
-import base.Pow.pow;
-import rec.Sum.sum
-using base.Add;
-using base.Sub;
-using base.Mult;
-using base.Div;
-using base.Pow;
+import Numbers
+import base.Add
+import base.Sub
+import base.Mult
+import base.Div
+import base.Pow
+import Sum
+using base.Add
+using base.Sub
+using base.Mult
+using base.Div
+using base.Pow
 
 work GeometricSum<i>(Complex a, Integer n) {
     let 2 sum(i -> pow(a,i),0,n)

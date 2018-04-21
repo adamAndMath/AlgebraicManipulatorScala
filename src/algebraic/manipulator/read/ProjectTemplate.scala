@@ -1,58 +1,71 @@
 package algebraic.manipulator.read
 
-import algebraic.manipulator.{Graph, Path, Project}
+import algebraic.manipulator.{Depending, Element, Environment, Graph}
 
-sealed trait ProjectTemplate {
-  def containsFile(path: Path): Boolean = containsFile(path.toList)
-  def getFile(path: Path): FileTemplate = getFile(path.toList)
-
-  def dependencies(root: ProjectTemplate, path: Path): Set[Path]
-  protected def containsFile(path: List[String]): Boolean
-  protected def getFile(path: List[String]): FileTemplate
-  def apply(): Project
-  def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: Path): Unit
+sealed trait ProjectTemplate extends Depending {
+  protected var parent: Option[ProjectTemplate] = None
+  def containsFile(path: List[String]): Boolean
+  def getFile(path: List[String]): FileTemplate
+  def findFile(path: List[String]): FileTemplate
+  def apply(): Element
+  def apply(name: String, env: Environment.Scope): Element
 }
 
 object ProjectTemplate {
   case class Folder(map: Map[String, ProjectTemplate]) extends ProjectTemplate {
-    override def dependencies(root: ProjectTemplate, path: Path): Set[Path] =
-      map.map{ case (k, p) => k -> p.dependencies(root, path + k)}.values.fold(Set.empty)(_ ++ _).filterNot(_ == path).filterNot(_.parent == path)
+    map.values.foreach(_.parent = Some(this))
 
-    protected override def containsFile(path: List[String]): Boolean =
+    override def dependencies: Set[String] =
+      map.values.flatMap(_.dependencies).toSet -- map.keys
+
+    override def containsFile(path: List[String]): Boolean =
       path.nonEmpty && map.contains(path.head) && map(path.head).containsFile(path.tail)
 
-    protected override def getFile(path: List[String]): FileTemplate = map(path.head).getFile(path.tail)
+    override def getFile(path: List[String]): FileTemplate = map(path.head).getFile(path.tail)
 
-    override def apply(): Project = {
-      val folder = new Project.Folder()
+    override def findFile(path: List[String]): FileTemplate =
+      if (map.contains(path.head)) getFile(path)
+      else parent.getOrElse(throw new IllegalArgumentException(s"no such path as ${path.mkString(".")}")).findFile(path)
 
-      Graph.topologicalSort[String, ProjectTemplate](map, (k, p) => p.dependencies(this, Path(k)).filter(_.parent.isEmpty).map(_.last))
-        .foreach{case (k, p) => p(folder, this, folder, Path(k))}
+    override def apply(): Element = {
+      val folder = new Environment.Scope(Nil, Environment.empty)
+
+      Graph.topologicalSort[String, ProjectTemplate](map, (_, p) => p.dependencies.filter(map.contains))
+        .foreach{case (k, p) => p(k, folder)}
 
       folder
     }
 
-    override def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: Path): Unit = {
-      val folder = new Project.Folder()
-      parent.map += (path.last -> folder)
+    override def apply(name: String, env: Environment.Scope): Element = {
+      val scope = env.scope(name)
 
-      Graph.topologicalSort[String, ProjectTemplate](map, (k, p) => p.dependencies(rootTemplate, path + k).filter(_.parent == path).map(_.last))
-        .foreach{case (k, p) => p(root, rootTemplate, folder, path + k)}
+      Graph.topologicalSort[String, ProjectTemplate](map, (_, p) => p.dependencies.filter(map.contains))
+        .foreach{case (k, p) => k -> p(k, scope)}
+
+      scope
     }
   }
+
   case class File(file: FileTemplate) extends ProjectTemplate {
-    override def dependencies(root: ProjectTemplate, path: Path): Set[Path] =
-      file.dependencies(root).map(path.common).filterNot(_ == path)
+    override def dependencies: Set[String] =
+      file.dependencies(this)
 
-    protected override def containsFile(path: List[String]): Boolean = path.isEmpty
+    override def containsFile(path: List[String]): Boolean = path.isEmpty
 
-    protected override def getFile(path: List[String]): FileTemplate =
+    override def getFile(path: List[String]): FileTemplate =
       if (path.isEmpty) file
       else throw new IllegalArgumentException
 
-    override def apply(): Project = ???
+    override def findFile(path: List[String]): FileTemplate =
+      if (path.isEmpty) file
+      else parent.getOrElse(throw new IllegalArgumentException).findFile(path)
 
-    override def apply(root: Project, rootTemplate: ProjectTemplate, parent: Project.Folder, path: Path): Unit =
-      parent.map += (path.last -> Project.File(file(root)))
+    override def apply(): Element = ???
+
+    override def apply(name: String, env: Environment.Scope): Element = {
+      val e = file(name, env)
+      env += (name -> e)
+      e
+    }
   }
 }

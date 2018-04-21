@@ -144,7 +144,7 @@ object ProofReader {
     val (par, t3) = t2.whenBlock(PARENTHESES, _.readList(COMMA, _.option(DASH, readExp)))
     val (pos, t4) = readTree(t3.expect(COLON))
 
-    (Substitute(pos, Path(path), from, to, dum, par), t4)
+    (Substitute(pos, path, from, to, dum, par), t4)
   }
 
   def readRename(tokens: Tokens): Read[Rename] = {
@@ -199,24 +199,24 @@ object ProofReader {
     }
   }
 
-  def readUsingAndImport(tokens: Tokens): Read[(Map[String, Path], Map[String, Path])] = {
-    def r(tokens: Tokens, using: Map[String, Path], imports: Map[String, Path]): Read[(Map[String, Path], Map[String, Path])] =
+  def readUsingAndImport(tokens: Tokens): Read[(Map[String, List[String]], Set[List[String]])] = {
+    def r(tokens: Tokens, using: Map[String, List[String]], imports: Set[List[String]]): Read[(Map[String, List[String]], Set[List[String]])] =
       if (tokens is "using") {
         val (p, tail) = tokens.tail.readList(DOT, _.string())
-        val path = Path(p)
+        val path = p
         r(tail.ignore(SEMI), using + (path.last -> path), imports)
       } else if (tokens is "import") {
         val (p, tail) = tokens.tail.readList(DOT, _.string())
-        val path = Path(p)
-        r(tail.ignore(SEMI), using, imports + (path.last -> path))
+        val path = p
+        r(tail.ignore(SEMI), using, imports + path)
       } else ((using, imports), tokens)
-    r(tokens, Map.empty, Map.empty)
+    r(tokens, Map.empty, Set.empty)
   }
 
   def readFile(path: List[String], tokens: Tokens): FileTemplate = {
     val ((using, imports), t1) = readUsingAndImport(tokens)
     val (ids, _) = t1.whileNot(EOF, readElement)
-    FileTemplate(Path(path), using, imports, ids)
+    FileTemplate(path, using, imports, ids)
   }
 
   def readFile(projectPath: file.Path, path: List[String]): FileTemplate = {

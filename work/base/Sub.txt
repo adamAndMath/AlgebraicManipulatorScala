@@ -1,5 +1,5 @@
-import Numbers.Complex
-import base.Add.add
+import Numbers
+import Add
 
 assume fn sub(Complex, Complex)
 

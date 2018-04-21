@@ -1,7 +1,7 @@
-import Numbers.Natural
-import base.Add.add
-import base.Mult.mult
-import rec.Prod.prod
+import Numbers
+import base.Add
+import base.Mult
+import Prod
 using base.Add
 using base.Sub
 using base.Mult

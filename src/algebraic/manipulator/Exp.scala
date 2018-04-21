@@ -1,7 +1,7 @@
 package algebraic.manipulator
 
 sealed trait Exp extends Depending {
-  override def dependencies(env: Environment): Set[Path] = Set.empty
+  override def dependencies: Set[String] = Set.empty
   def getFree: Set[Variable]
   def getBound: Set[Variable]
 
@@ -51,7 +51,7 @@ case class IntVal(v: Int) extends Exp {
 case class Variable(name: String) extends Exp {
   override def toString: String = name
 
-  override def dependencies(env: Environment): Set[Path] = Set(env.toFull(Path(name)))
+  override def dependencies: Set[String] = Set(name)
   override def getFree: Set[Variable] = Set(this)
   override def getBound: Set[Variable] = Set.empty
 
@@ -75,7 +75,7 @@ case class Lambda(params: List[Variable], exp: Exp) extends Exp {
   override def toString: String =
     (if (params.length == 1) params.mkString else params.mkString("(", ",", ")")) + s" -> $exp"
 
-  override def dependencies(env: Environment): Set[Path] = env.bind(params.map(_.toString).toSet).dependencies(exp)
+  override def dependencies: Set[String] = exp.dependencies -- params.map(_.name)
   override def getFree: Set[Variable] = exp.getFree -- params
   override def getBound: Set[Variable] = exp.getBound ++ params
 
@@ -138,9 +138,9 @@ case class Operation(op: Exp, parameters: List[Exp]) extends Exp {
     case _ => op + parameters.mkString("(",",",")")
   }
 
-  override def dependencies(env: Environment): Set[Path] = env.dependencies(op :: parameters)
-  override def getFree: Set[Variable] = (op :: parameters).map(_.getFree).fold(Set.empty)(_++_)
-  override def getBound: Set[Variable] = (op :: parameters).map(_.getBound).fold(Set.empty)(_++_)
+  override def dependencies: Set[String] = (op :: parameters).flatMap(_.dependencies).toSet
+  override def getFree: Set[Variable] = (op :: parameters).flatMap(_.getFree).toSet
+  override def getBound: Set[Variable] = (op :: parameters).flatMap(_.getBound).toSet
 
   override def get(tree: Tree): TraversableOnce[Exp] = tree match {
     case Tree.Leaf => List(this)

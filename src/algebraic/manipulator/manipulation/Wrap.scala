@@ -4,10 +4,10 @@ import algebraic.manipulator.function.{InductiveFunction, SimpleFunction}
 import algebraic.manipulator.objects.SimpleObject
 
 case class Wrap(wrapper: Exp, positions: Tree) extends PathManipulation(positions) {
-  override def dependencies(env: Environment): Set[Path] = env.dependencies(wrapper)
+  override def dependencies: Set[String] = wrapper.dependencies
 
   override def replace(env: Environment, exp: Exp): Exp = wrapper match {
-    case Operation(Variable(name), parameters) => env(Path(name)) match {
+    case Operation(Variable(name), parameters) => env.find(List(name)) match {
       case SimpleFunction(header, value) =>
         if (header.parameters.length != parameters.length)
           throw new IllegalArgumentException(s"Expected ${header.parameters.length} arguments, but recieved ${parameters.length}")
@@ -41,7 +41,7 @@ case class Wrap(wrapper: Exp, positions: Tree) extends PathManipulation(position
           throw new IllegalArgumentException(s"$wrapper doesn't match any inductive cases")
         }
     }
-    case Variable(name) => env(Path(name)) match {
+    case Variable(name) => env.find(List(name)) match {
       case SimpleObject(value) =>
         if (value != exp)
           throw new IllegalArgumentException(s"Expected $value, but recieved $exp")

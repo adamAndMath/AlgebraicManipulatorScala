@@ -1,4 +1,4 @@
-import Numbers.Complex
+import Numbers
 
 assume fn add(Complex, Complex)
 

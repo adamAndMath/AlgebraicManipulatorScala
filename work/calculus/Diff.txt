@@ -1,13 +1,13 @@
-import Numbers.Complex
-import base.Add.add
-import base.Sub.sub
-import base.Mult.mult
-import base.Div.div
-import base.Pow.pow
-import base.Log.log
-import calculus.Lim.lim
-import calculus.Ln.ln
-import calculus.Euler.e
+import Numbers
+import base.Add
+import base.Sub
+import base.Mult
+import base.Div
+import base.Pow
+import base.Log
+import Lim
+import Ln
+import Euler
 using base.Add
 using base.Sub
 using base.Mult
@@ -59,11 +59,11 @@ work Distribute<x>(Complex -> Complex f, Complex -> Complex g) {
 work DistributeSub<x>(Complex -> Complex f, Complex -> Complex g) {
     let 2 diff(x -> sub(f(x),g(x)))(x)
     substitute Sub.AsAdd:1,-1,0,0
-    substitute Mult.Sub:1,-1,0,0,1
+    substitute Mult.NegAsMult:1,-1,0,0,1
     wrap x -> mult(sub(0,1),g(x)):1,-1,0,0,1
     substitute Distribute:1
     substitute Factor:1,1
-    substitute ~Mult.Sub:1,1
+    substitute ~Mult.NegAsMult:1,1
     substitute ~Sub.AsAdd:1
 } result {
     diff(x -> sub(f(x), g(x)))(x) = sub(diff(f)(x),diff(g)(x))
@@ -169,7 +169,7 @@ work Line<x>(Complex x) {
 	diff(x -> x)(x) = 1
 }
 
-work Ln(Complex x) {
+work DiffLn(Complex x) {
 	let 2 diff(ln)(x)
     substitute Definition<h>:1
 	substitute ~Ln.DistributeSub:1,1,0,0;
@@ -178,7 +178,7 @@ work Ln(Complex x) {
 	substitute ~Div.MultDiv(-,x):1,1,0,1;
 	substitute Div.Commute[2->0]:1,1,0;
 	substitute Div.AsMult[0->1]:1,1,0,0;
-	substitute ~Ln.Mult:1,1,0,0;
+	substitute ~Ln.LnMult:1,1,0,0;
 	wrap h -> pow(add(1,div(h,x)),div(1,div(h,x))):1,1,0,0,0
 	wrap u -> div(ln(u),x):1,1,0
 	substitute Lim.Func[0->1]:1;
@@ -194,13 +194,13 @@ work Ln(Complex x) {
 	diff(ln)(x) = div(1,x)
 }
 
-work Log<x>(Complex a, Complex x) {
+work DiffLog<x>(Complex a, Complex x) {
 	let 2 diff(x -> log(a,x))(x)
 	substitute Ln.ChangeBase:1,-1,0,0;
 	substitute Div.AsMult:1,-1,0,0;
 	substitute Mult.Commute:1,-1,0,0;
 	substitute Factor:1;
-	substitute Ln:1,1;
+	substitute DiffLn:1,1;
 	substitute ~Div.AsMult:1;
 	substitute Div.Commute[0->2]:1;
 } result {
@@ -209,11 +209,11 @@ work Log<x>(Complex a, Complex x) {
 
 work Exp<x>(Complex x) {
 	let 2 diff(x -> ln(pow(e,x)))(x)
-	substitute Ln.Pow[1->0]:1,-1,0,0
+	substitute Ln.LnPow:1,-1,0,0
 	wrap x -> pow(e,x):0,-1,0,0,0
 	substitute Chain:0
 	unwrap:0,0,0
-	substitute Ln:0,0
+	substitute DiffLn:0,0
 	substitute Line:1
 	substitute Mult.Commute:0
 	substitute ~Div.AsMult:0
@@ -226,7 +226,7 @@ work Exp<x>(Complex x) {
 
 work Exponential<x>(Complex a, Complex x) {
 	let 2 diff(x -> pow(a,x))(x)
-	substitute Ln.Pow[0->2]:1,-1,0,0,0
+	substitute ~Ln.PowLn:1,-1,0,0,0
 	substitute Pow.Combine:1,-1,0,0
 	wrap x -> mult(ln(a),x):1,-1,0,0,1
 	wrap x -> pow(e,x):1,-1,0,0
@@ -238,15 +238,15 @@ work Exponential<x>(Complex a, Complex x) {
     substitute Mult.IdentityRight:1,1
 	substitute Exp:1,0
 	substitute ~Pow.Combine:1,0
-	substitute Ln.Pow[2->0]:1,0,0
+	substitute Ln.PowLn:1,0,0
 	substitute Mult.Commute:1
 } result {
 	diff(x -> pow(a,x))(x) = mult(ln(a),pow(a,x))
 }
 
-work Pow<x>(Complex n, Complex x) {
+work DiffPow<x>(Complex n, Complex x) {
 	let 2 diff(x -> pow(x,n))(x)
-	substitute Ln.Pow[0->2]:1,-1,0,0,0
+	substitute ~Ln.PowLn:1,-1,0,0,0
 	substitute Pow.Combine:1,-1,0,0
 	wrap x -> mult(ln(x),n):1,-1,0,0,1
 	wrap x -> pow(e,x):1,-1,0,0
@@ -254,14 +254,14 @@ work Pow<x>(Complex n, Complex x) {
 	unwrap:1,0,0
 	substitute Mult.Commute:1,1,-1,0,0
 	substitute Factor:1,1
-	substitute Ln:1,1,1
+	substitute DiffLn:1,1,1
 	substitute Exp:1,0
 	substitute ~Mult.Associate:1
 	substitute Mult.Commute:1,0
 	substitute Mult.Associate:1
 	substitute ~Div.AsMult:1,1
 	substitute ~Pow.Combine:1,1,0
-	substitute Ln.Pow[2->0]:1,1,0,0
+	substitute Ln.PowLn:1,1,0,0
 	substitute ~Pow.Identity:1,1,1
 	substitute ~Pow.Division:1,1
 } result {

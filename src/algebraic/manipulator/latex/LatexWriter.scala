@@ -37,7 +37,7 @@ object LatexWriter {
     Options += ("layout", args => expWriter = (expWriter /: args.map(a => ExpWriter(Paths.get(a))))(_ ++ _))
   }
 
-  def apply(project: Project): String = {
+  def apply(project: Element): String = {
     val date = LocalDate.now()
     "\\documentclass{report}\n" +
       "\\usepackage[utf8]{inputenc}\n" +
@@ -51,34 +51,32 @@ object LatexWriter {
       "\\begin{document}\n\n" +
       "\\maketitle\n" +
       "\\tableofcontents\n\n" +
-      project.getFiles().map(writeFile(project, _)).mkString("\n") +
+      project.filter(_.isInstanceOf[WorkFile]).map(e => writeFile(e.asInstanceOf[WorkFile])).mkString("\n") +
       "\n\\end{document}"
   }
 
-  def writeFile(project: Project, file: WorkFile): String = {
-    val env = file.env(project)
-
-    val assumptions = file.names.filter(n => getLocation(file.get(n)) == AssumptionLocation)
+  def writeFile(file: WorkFile): String = {
+    val assumptions = file.names.filter(n => getLocation(file(n)) == AssumptionLocation)
 
     s"\\chapter{${file.path.last}}\n" +
-      (file.names.filter(n => getLocation(file.get(n)) == DefinitionLocation).map(name =>
-        writeElementDefinition(name, file.get(name))
+      (file.names.filter(n => getLocation(file(n)) == DefinitionLocation).map(name =>
+        writeElementDefinition(name, file(name))
       ) ++
       {
         if (assumptions.nonEmpty)
           "Given the following assumptions:" ::
             assumptions.map(name =>
               s"\\label{${(file.path + name).mkString(":")}}\n" +
-                writeAssumption(file.get(name))
+                writeAssumption(file(name))
             )
         else Nil
       }).mkString("\\\\\n") + "\n" +
       file.names
-        .filter(n => getLocation(file.get(n)) == ProofLocation)
+        .filter(n => getLocation(file(n)) == ProofLocation)
         .map(name => {
         s"\\section{$name}\n" +
           s"\\label{${(file.path + name).mkString(":")}}\n" +
-          writeElement(env, file.get(name))
+          writeElement(file, file(name))
       }).mkString
   }
 
@@ -90,6 +88,7 @@ object LatexWriter {
     case _: ObjectElement => DefinitionLocation
     case _: FunctionElement => DefinitionLocation
     case _: Identity => ProofLocation
+    case _ => throw new IllegalArgumentException(s"${element.getClass} doesn't have a location")
   }
 
   def writeElementDefinition(name: String, element: Element): String = element match {
@@ -189,9 +188,9 @@ object LatexWriter {
       val identity = env(path).asInstanceOf[Identity]
       writeIdentityReference(env.toFull(path), identity.header, List(from, to).map(identity.result))
     case Rename(_, from, to) => s"Renaming $from to $to"
-    case Wrap(Variable(name), _) => env(Path(name)) match {
-      case SimpleObject(exp) => writeIdentityReference(env.toFull(Path(name)), Header(Nil, Nil), List(Variable(name), exp))
-      case SimpleFunction(header, exp) => writeIdentityReference(env.toFull(Path(name)), header, List(Operation(Variable(name), header.parameters.map(_.variable)), exp))
+    case Wrap(Variable(name), _) => env(List(name)) match {
+      case SimpleObject(exp) => writeIdentityReference(env.toFull(List(name)), Header(Nil, Nil), List(Variable(name), exp))
+      case SimpleFunction(header, exp) => writeIdentityReference(env.toFull(List(name)), header, List(Operation(Variable(name), header.parameters.map(_.variable)), exp))
     }
     case Wrap(Lambda(params, e), _) =>
       s"Wrapping $$${params.map(writeExp(_)).mkString("(", ", ", ")")} \\rightarrow ${writeExp(e)}$$"
@@ -199,7 +198,7 @@ object LatexWriter {
     case Unwrap(_) => "Unwrapping"
   }
 
-  def writeIdentityReference(path: Path, header: Header, exps: List[Exp]): String = {
+  def writeIdentityReference(path: List[String], header: Header, exps: List[Exp]): String = {
     val parameters = header.parameters.map(_.variable)
     val equation = exps.map(e => writeExp(e, e.tree.filter(parameters.contains).map(v => colors(parameters.indexOf(v)))))
     val str = s"$$${writeDefinition(header, v => Some(colors(parameters.indexOf(v))))}${equation.mkString("=")}$$"

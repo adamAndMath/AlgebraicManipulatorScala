@@ -1,19 +1,22 @@
-import Numbers.Complex
-import base.Add.add
-import base.Sub.sub
-import base.Mult.mult
-import base.Div.div
-import base.Pow.pow
+import Numbers
+import Add
+import Sub
+import Mult
+import Div
+import Pow
 
 assume fn log(Complex, Complex)
 
-assume Pow(Complex a, Complex b)
-	b=log(a,pow(a,b))=pow(a,log(a,b));
+assume LogPow(Complex a, Complex b)
+	log(a,pow(a,b))=b
+
+assume PowLog(Complex a, Complex b)
+	pow(a,log(a,b))=b
 
 work Inverse(Complex a) {
 	let 2 log(a,a);
 	substitute ~Pow.Identity:1,1;
-	substitute Pow[1->0]:1;
+	substitute LogPow:1;
 } result {
 	log(a,a)=1
 }
@@ -21,34 +24,34 @@ work Inverse(Complex a) {
 work Singularity(Complex a) {
 	let 2 log(a,1);
 	substitute ~Pow.Singularity(a):1,1;
-	substitute Pow[1->0]:1;
+	substitute LogPow:1;
 } result {
 	log(a,1)=0
 }
 
 work Distribute(Complex a, Complex b, Complex c) {
 	let 2 log(a,mult(b,c));
-	substitute Pow[0->2](a,-):1,1,[0|1];
+	substitute ~PowLog(a,-):1,1,[0|1];
 	substitute ~Pow.Definition:1,1;
-	substitute Pow[1->0]:1;
+	substitute LogPow:1;
 } result {
 	log(a,mult(b,c))=add(log(a,b),log(a,c))
 }
 
 work DistributeSub(Complex a, Complex b, Complex c) {
 	let 2 log(a,div(b,c));
-	substitute Pow[0->2](a,-):1,1,[0|1];
+	substitute ~PowLog(a,-):1,1,[0|1];
 	substitute ~Pow.Division:1,1;
-	substitute Pow[1->0]:1;
+	substitute LogPow:1;
 } result {
 	log(a,div(b,c))=sub(log(a,b),log(a,c))
 }
 
-work Mult(Complex a, Complex b, Complex p) {
+work LogMult(Complex a, Complex b, Complex p) {
 	let 3 log(a,pow(b,p));
-	substitute Pow[0->2](a,-):[1,1,0|2,1,0];
+	substitute ~PowLog(a,-):[1,1,0|2,1,0];
 	substitute Pow.Combine:[1,1|2,1];
-	substitute Pow[1->0]:[1|2];
+	substitute LogPow:[1|2];
 	substitute Mult.Commute:2;
 } result {
 	log(a,pow(b,p))=mult(log(a,b),p)=mult(p,log(a,b))
@@ -58,8 +61,8 @@ work ChangeBase(Complex a, Complex b, Complex c) {
     let 2 log(a,b);
     substitute ~Div.DivMult(-,log(c,a)):1;
     substitute Mult.Commute:1,0;
-    substitute Mult[1->0]:1,0;
-    substitute Pow[2->0]:1,0,1;
+    substitute LogMult[1->0]:1,0;
+    substitute PowLog:1,0,1;
 } result {
     log(a,b)=div(log(c,b),log(c,a))
 }

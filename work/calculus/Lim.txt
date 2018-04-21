@@ -1,6 +1,6 @@
-import Numbers.Complex;
-import base.Div.div;
-import calculus.Infinity.inf;
+import Numbers;
+import base.Div;
+import Infinity;
 
 assume fn lim(Complex, Complex -> Complex)
 

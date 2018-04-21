@@ -1,7 +1,7 @@
-import Numbers.Complex
-import base.Add.add
-import base.Sub.sub
-import base.Mult.mult
+import Numbers
+import Add
+import Sub
+import Mult
 
 assume fn div(Complex, Complex)
 

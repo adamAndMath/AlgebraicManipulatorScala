@@ -1,9 +1,9 @@
 package algebraic.manipulator.objects
 
-import algebraic.manipulator.{Environment, Exp, Path}
+import algebraic.manipulator.{Environment, Exp}
 
 case class SimpleObject(exp: Exp) extends ObjectElement {
-  override def dependencies(env: Environment): Set[Path] = env.dependencies(exp)
+  override def dependencies: Set[String] = exp.dependencies
 
-  override def validate(env: Environment): Traversable[String] = None
+  override def validate(env: Environment): Traversable[(List[String], String)] = None
 }

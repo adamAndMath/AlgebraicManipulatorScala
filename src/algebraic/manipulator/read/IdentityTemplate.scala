@@ -85,8 +85,8 @@ object IdentityTemplate {
   case class AssumptionTemplate(header: Header, result: List[Exp]) extends IdentityTemplate {
     override def apply(env: Environment): Assumption = new Assumption(header, result)
 
-    override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(header) ++ header.bind(env).dependencies(result)
+    override def dependencies: Set[String] =
+      header.scope(result.flatMap(_.dependencies).toSet)
   }
 
   case class ProofTemplate(header: Header, result: List[Exp], count: Int, origin: Exp, manipulations: List[Manipulation]) extends IdentityTemplate {
@@ -102,8 +102,8 @@ object IdentityTemplate {
       proof
     }
 
-    override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(header) ++ header.bindWithDummies(env).dependencies(manipulations)
+    override def dependencies: Set[String] =
+      header.scopeWithDummies(manipulations.flatMap(_.dependencies).toSet)
   }
 
   case class InductionProofTemplate(header: Header, result: List[Exp], base: InductiveBaseTemplate, steps: List[InductiveStepTemplate]) extends IdentityTemplate {
@@ -120,20 +120,18 @@ object IdentityTemplate {
       proof
     }
 
-    override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(header) ++ header.bindWithDummies(env).dependencies(base :: steps)
+    override def dependencies: Set[String] =
+      header.scopeWithDummies((base :: steps).flatMap(_.dependencies).toSet)
   }
 
   case class InductiveBaseTemplate(inductives: Map[Variable, Exp], count: Int, origin: Exp, manipulations: List[Manipulation]) extends Depending {
-    override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(origin :: manipulations ++ inductives.values)
+    override def dependencies: Set[String] =
+      (origin :: manipulations ++ inductives.values).flatMap(_.dependencies).toSet
   }
 
   sealed abstract class InductiveStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation]) extends Depending {
-    override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(params) ++ env.bind(params).dependencies(_.bind(Set("step")).dependencies(exp :: manipulations))
-
-    protected def bindStep(env: Environment, proof: InductionProof): Environment = StepEnvironment(env, proof.header, proof.result, proof.inductives)
+    override def dependencies: Set[String] =
+      Header(Nil, params).scope((exp :: manipulations).flatMap(_.dependencies).toSet -- Set("step"))
 
     def apply(env: Environment, proof: InductionProof): Unit
   }
@@ -145,7 +143,7 @@ object IdentityTemplate {
       val obj = proof.addStep(v, params, exp)
       (manipulations.indices zip manipulations).foreach { case (i, m) =>
         try {
-          obj.proof.asInstanceOf[AssumedProof](bindStep(env, proof), m)
+          obj.proof.asInstanceOf[AssumedProof](env, m)
         } catch {
           case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation ${i + 1} in $v -> $exp: $m for ${obj.proof.asInstanceOf[AssumedProof].current.mkString("=")}", e)
         }
@@ -156,13 +154,13 @@ object IdentityTemplate {
   case class InductiveProofStepTemplate(v: Variable, params: List[Definition], exp: Exp, count: Int, origin: Exp, manipulations: List[Manipulation])
     extends InductiveStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation]) {
 
-    override def dependencies(env: Environment): Set[Path] = super.dependencies(env) ++ env.bind(params).dependencies(exp)
+    override def dependencies: Set[String] = super.dependencies ++ (exp.dependencies -- params.map(_.name))
 
     override def apply(env: Environment, proof: InductionProof): Unit = {
       val obj = proof.addStep(v, params, exp, count, origin)
       (manipulations.indices zip manipulations).foreach { case (i, m) =>
         try {
-          obj.proof.asInstanceOf[Proof](bindStep(env, proof), m)
+          obj.proof.asInstanceOf[Proof](env, m)
         } catch {
           case e: Exception => throw new IllegalStateException(s"Failed to apply manipulation ${i + 1} in $v -> $exp: $m for ${obj.proof.asInstanceOf[Proof].current.mkString("=")}", e)
         }

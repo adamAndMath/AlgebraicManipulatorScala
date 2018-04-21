@@ -2,49 +2,33 @@ package algebraic.manipulator.read
 
 import algebraic.manipulator._
 
-case class FileTemplate(path: Path, using: Map[String, Path], imports: Map[String, Path], identities: List[(String, ElementTemplate)]) {
-  class FileEnvironment(private val project: ProjectTemplate, private val file: FileTemplate) extends Environment {
-    override val path: Path = file.path
-
-    override def apply(path: Path): Identity = throw new IllegalStateException
-
-    override def toFull(path: Path): Path = path match {
-      case Path(name) if file.contains(name) => file.path + name
-      case Path(name) if imports.contains(name) => imports(name)
-      case Path(f, name) if using.contains(f) => using(f) + name
-      case Path(f, name) =>
-        val p = file.path.parent + f
-        if (project.containsFile(p))
-          p + name
-        else
-          path
-      case _ => path
-    }
-  }
-
+case class FileTemplate(path: List[String], using: Map[String, List[String]], imports: Set[List[String]], identities: List[(String, ElementTemplate)]) {
   def contains(name: String): Boolean = identities.exists(_._1 == name)
 
-  def dependencies(project: ProjectTemplate): Set[Path] =
+  def dependencies(project: ProjectTemplate): Set[String] =
     try {
-      new FileEnvironment(project, this).dependencies(identities.map(_._2)) ++ imports.values ++ using.values
+      identities.flatMap(_._2.dependencies).toSet --
+        imports.map(project.findFile).flatMap(_.identities.map(_._1)) --
+        using.keys -- identities.map(_._1) ++
+        (imports ++ using.values).map(_.head)
     } catch {
-      case e: Exception  => throw new IllegalStateException(s"Missing dependencies for $path", e)
+      case e: Exception  => throw new IllegalStateException(s"Missing dependencies for ${path.mkString(".")}", e)
     }
 
-  def apply(project: Project): WorkFile = {
+  def apply(name: String, env: Environment): Element = {
     try {
-      val file = new WorkFile(path)
+      val file = new WorkFile(name, env)
       using.foreach { case (k, p) => file.use(k, p) }
-      imports.foreach { case (k, p) => file.importing(k, p) }
+      imports.foreach(file.importing)
       identities.foreach {
-        case (name, ide) =>
+        case (key, ide) =>
           try {
-            file.add(name, ide.apply(file.env(project)))
-          } catch { case e: Exception => throw new IllegalStateException(s"Failed to build $name", e)}
+            file += (key -> ide.apply(file))
+          } catch { case e: Exception => throw new IllegalStateException(s"Failed to build $key", e)}
       }
       file
     } catch {
-      case e: RuntimeException => throw new IllegalStateException(s"Exception occurred while building $path", e)
+      case e: RuntimeException => throw new IllegalStateException(s"Exception occurred while building ${path.mkString(".")}", e)
     }
   }
 }

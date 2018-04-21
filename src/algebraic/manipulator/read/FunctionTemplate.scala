@@ -1,6 +1,6 @@
 package algebraic.manipulator.read
 
-import algebraic.manipulator.{Environment, Exp, Header, Path, Type}
+import algebraic.manipulator.{Environment, Exp, Header, Type}
 import algebraic.manipulator.function._
 import algebraic.manipulator.read.ProofReader._
 import algebraic.manipulator.read.Tokens._
@@ -57,20 +57,20 @@ object FunctionTemplate {
   case class AssumedFunctionTemplate(params: List[Type]) extends FunctionTemplate {
     override def apply(env: Environment): FunctionElement = AssumedFunction(params)
 
-    override def dependencies(env: Environment): Set[Path] = env.dependencies(params)
+    override def dependencies: Set[String] = params.flatMap(_.dependencies).toSet
   }
 
   case class SimpleFunctionTemplate(header: Header, exp: Exp) extends FunctionTemplate {
     override def apply(env: Environment): FunctionElement = SimpleFunction(header, exp)
 
-    override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(header) ++ header.bind(env).dependencies(exp)
+    override def dependencies: Set[String] =
+      header.scope(exp.dependencies)
   }
 
   case class InductiveFunctionTemplate(header: Header, base: InductiveBase, steps: List[InductiveStep]) extends FunctionTemplate {
     override def apply(env: Environment): FunctionElement = InductiveFunction(header, base, steps)
 
-    override def dependencies(env: Environment): Set[Path] =
-      env.dependencies(header) ++ header.bind(env).dependencies(base :: steps)
+    override def dependencies: Set[String] =
+      header.scope((base :: steps).flatMap(_.dependencies).toSet)
   }
 }

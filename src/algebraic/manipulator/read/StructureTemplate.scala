@@ -1,6 +1,6 @@
 package algebraic.manipulator.read
 
-import algebraic.manipulator.{Environment, Path}
+import algebraic.manipulator.Environment
 import algebraic.manipulator.read.ProofReader._
 import algebraic.manipulator.read.Tokens._
 import algebraic.manipulator.structure._
@@ -38,12 +38,12 @@ object StructureTemplate {
   object SimpleStructureTemplate extends StructureTemplate {
     override def apply(env: Environment): Structure = SimpleStructure
 
-    override def dependencies(env: Environment): Set[Path] = Set.empty
+    override def dependencies: Set[String] = Set.empty
   }
 
   case class InductiveStructureTemplate(base: InductiveBase, steps: List[InductiveStep]) extends StructureTemplate {
     override def apply(env: Environment): Structure = InductiveStructure(base, steps)
 
-    override def dependencies(env: Environment): Set[Path] = env.dependencies(base :: steps)
+    override def dependencies: Set[String] = (base :: steps).flatMap(_.dependencies).toSet
   }
 }

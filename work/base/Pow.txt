@@ -1,10 +1,8 @@
-import Numbers.Complex
-import Numbers.Real
-import Numbers.Integer
-import base.Add.add
-import base.Sub.sub
-import base.Mult.mult
-import base.Div.div
+import Numbers
+import Add
+import Sub
+import Mult
+import Div
 
 assume fn pow(Complex, Complex)
 

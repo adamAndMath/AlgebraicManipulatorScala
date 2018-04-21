@@ -23,13 +23,10 @@ object Main {
     val project = projectTemplate()
 
     if (safe) {
-      val errs = project.getFiles().flatMap(file => {
-        val env = file.env(project)
-        file.names.flatMap(name => file.get(name).validate(env).map(v => s"${file.path}: $name: $v"))
-      })
+      val errs = project.validate(Environment.empty)
 
       if (errs.nonEmpty)
-        throw new IllegalStateException("Validation errors:\n"+errs.mkString("\n"))
+        throw new IllegalStateException("Validation errors:\n"+errs.map(e => s"${e._1.mkString(".")}: ${e._2}").mkString("\n"))
     }
 
     Files.write(Paths.get(output), LatexWriter(project).getBytes)

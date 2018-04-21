@@ -1,10 +1,10 @@
-import Numbers.Complex;
-import Numbers.Integer;
-import base.Add.add;
-import base.Sub.sub;
-import base.Mult.mult;
-import base.Div.div;
-import base.Pow.pow;
+import Numbers;
+import Numbers;
+import base.Add;
+import base.Sub;
+import base.Mult;
+import base.Div;
+import base.Pow;
 using base.Add;
 using base.Sub;
 using base.Mult;

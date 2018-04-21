@@ -1,6 +1,6 @@
-import Numbers.Complex
-import base.Add.add
-import base.Sub.sub
+import Numbers
+import Add
+import Sub
 
 assume fn mult(Complex, Complex)
 
@@ -62,7 +62,7 @@ work Singularity(Complex a) {
     0=mult(0,a)=mult(a,0)
 }
 
-work Sub(Complex a) {
+work NegAsMult(Complex a) {
     let 3 sub(0,a);
     substitute Singularity[0->2](a):[1,0|2,0];
     substitute ~IdentityRight:[1,1|2,1];

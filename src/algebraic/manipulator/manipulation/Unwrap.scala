@@ -5,15 +5,15 @@ import algebraic.manipulator.function.{InductiveFunction, SimpleFunction}
 import algebraic.manipulator.objects.SimpleObject
 
 case class Unwrap(positions: Tree) extends PathManipulation(positions) {
-  override def dependencies(env: Environment): Set[Path] = Set.empty
+  override def dependencies: Set[String] = Set.empty
 
   override def replace(env: Environment, exp: Exp): Exp = exp match {
     case Variable(name) =>
-      env(Path(name)) match {
+      env.find(List(name)) match {
         case SimpleObject(value) => value
       }
     case Operation(Variable(name), parameters) =>
-      env(Path(name)) match {
+      env.find(List(name)) match {
         case SimpleFunction(header, value) =>
           if (header.parameters.length != parameters.length)
             throw new IllegalArgumentException(s"Expected ${header.parameters.length} arguments, but recieved ${parameters.length}")

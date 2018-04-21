@@ -1,11 +1,11 @@
 package algebraic.manipulator.function
 
-import algebraic.manipulator.{Environment, Path, Type}
+import algebraic.manipulator.{Environment, Type}
 
 case class AssumedFunction(params: List[Type]) extends FunctionElement {
   override def paramTypes: List[Type] = params
 
-  override def dependencies(env: Environment): Set[Path] = env.dependencies(params)
+  override def dependencies: Set[String] = params.flatMap(_.dependencies).toSet
 
-  override def validate(env: Environment): Traversable[String] = None
+  override def validate(env: Environment): Traversable[(List[String], String)] = None
 }

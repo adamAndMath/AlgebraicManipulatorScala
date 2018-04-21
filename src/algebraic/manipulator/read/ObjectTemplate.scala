@@ -1,6 +1,6 @@
 package algebraic.manipulator.read
 
-import algebraic.manipulator.{Environment, Exp, Path}
+import algebraic.manipulator.{Environment, Exp}
 import algebraic.manipulator.objects._
 import algebraic.manipulator.read.ProofReader.readExp
 import algebraic.manipulator.read.Tokens._
@@ -24,12 +24,12 @@ object ObjectTemplate {
   object AssumedObjectTemplate extends ObjectTemplate {
     override def apply(env: Environment): ObjectElement = AssumedObject
 
-    override def dependencies(env: Environment): Set[Path] = Set.empty
+    override def dependencies: Set[String] = Set.empty
   }
 
   case class SimpleObjectTemplate(exp: Exp) extends ObjectTemplate {
     override def apply(env: Environment): ObjectElement = SimpleObject(exp)
 
-    override def dependencies(env: Environment): Set[Path] = env.dependencies(exp)
+    override def dependencies: Set[String] = exp.dependencies
   }
 }

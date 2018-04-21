@@ -11,5 +11,5 @@ case class Rename(positions: Tree, from: Variable, to: Variable) extends PathMan
       Lambda(parameters.map(v => if (v == from) to else v), value.set(from -> to))
   }
 
-  override def dependencies(env: Environment): Set[Path] = Set.empty
+  override def dependencies: Set[String] = Set.empty
 }

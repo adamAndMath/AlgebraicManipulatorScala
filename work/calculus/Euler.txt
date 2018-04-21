@@ -1,6 +1,6 @@
-import base.Add.add
-import base.Div.div
-import base.Pow.pow
-import calculus.Lim.lim
+import base.Add
+import base.Div
+import base.Pow
+import Lim
 
 define object e=lim(0,h -> pow(add(1,h),div(1,h)))
