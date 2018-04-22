@@ -1,9 +1,12 @@
 package algebraic.manipulator.function
 
 import algebraic.manipulator._
+import algebraic.manipulator.specifiers.{Header, TypeHeader}
 
 case class SimpleFunction(header: Header, exp: Exp) extends FunctionElement {
-  override def paramTypes: List[Type] = header.parameters.map(_.varType)
+  assert(header.dummies.toSet == exp.getBound, s"${header.dummies} doesn't match ${exp.getBound}")
+
+  override def typeHeader: TypeHeader = header.toType
 
   override def dependencies: Set[String] =
     header.scope(exp.dependencies)

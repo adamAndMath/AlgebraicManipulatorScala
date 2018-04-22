@@ -1,5 +1,7 @@
 package algebraic.manipulator
 
+import algebraic.manipulator.specifiers.HeadMatch
+
 sealed trait Exp extends Depending {
   override def dependencies: Set[String] = Set.empty
   def getFree: Set[Variable]
@@ -32,7 +34,7 @@ sealed trait Exp extends Depending {
     case PathTree.Node(_) => throw new IllegalArgumentException("Illegal path")
   }
 
-  def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])]
+  def matchExp(exp: Exp, headMatch: HeadMatch): Option[HeadMatch]
 }
 
 case class IntVal(v: Int) extends Exp {
@@ -44,8 +46,8 @@ case class IntVal(v: Int) extends Exp {
   override def setAll(dum: Map[Variable, Variable], map: Map[Variable, Exp]): Exp = this
   override def tree: PathTree[Variable] = PathTree.empty
 
-  override def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])] =
-    Some((bounds, params)).filter(_ => exp == this)
+  override def matchExp(exp: Exp, headMatch: HeadMatch): Option[HeadMatch] =
+    Some(headMatch).filter(_ => exp == this)
 }
 
 case class Variable(name: String) extends Exp {
@@ -60,13 +62,18 @@ case class Variable(name: String) extends Exp {
 
   override def tree: PathTree[Variable] = PathTree.Leaf(this)
 
-  override def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])] =
-    if (!params.contains(this))
-      Some((bounds, params)).filter(_ => this == exp)
-    else if (params(this).isDefined)
-      Some((bounds, params)).filter(_ => params(this).get == exp)
-    else
-      Some((bounds, params + (this -> Some(exp))))
+  override def matchExp(exp: Exp, headMatch: HeadMatch): Option[HeadMatch] = {
+    val pars = headMatch.parameters.map(p => p._1.variable -> p._1)
+    if (!pars.contains(this))
+      Some(headMatch).filter(_ => this == exp)
+    else {
+      val v = headMatch.parameters(pars(this))
+      if (v.isDefined)
+        Some(headMatch).filter(_ => v.get == exp)
+      else
+        Some(HeadMatch(headMatch.generics, headMatch.dummies, headMatch.parameters + (pars(this) -> Some(exp))))
+    }
+  }
 }
 
 case class Lambda(params: List[Variable], exp: Exp) extends Exp {
@@ -116,17 +123,21 @@ case class Lambda(params: List[Variable], exp: Exp) extends Exp {
       else throw new IndexOutOfBoundsException
   }
 
-  override def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])] =
+  override def matchExp(exp: Exp, headMatch: HeadMatch): Option[HeadMatch] =
     exp match {
       case Lambda(p, e) =>
         if(this.params.length != p.length)
           None
         else {
-          val b = (this.params zip p).toMap.filterKeys(bounds.contains).mapValues(Some(_))
-          if (b.exists{case (k, v) => bounds.getOrElse(k, Some(k)).exists(_ != v.get)})
+          val b = (this.params zip p).toMap.filterKeys(headMatch.dummies.contains).mapValues(Some(_))
+          if (b.exists{case (k, v) => headMatch.dummies.getOrElse(k, Some(k)).exists(_ != v.get)})
             None
-          else
-            this.exp.matchExp(e, bounds ++ b, params -- this.params ++ b).map(re => re._1 -> (re._2 -- b.keys ++ params.filterKeys(b.contains)))
+          else {
+            val rem = HeadMatch(Map.empty, Map.empty, headMatch.parameters.filterKeys(d => params.contains(d.variable)))
+            val add = HeadMatch(Map.empty, Map.empty, b.map{case (k, v) => Definition(AnyType, k) -> v})
+
+            this.exp.matchExp(e, headMatch -- rem ++ add ++ HeadMatch(Map.empty, b, Map.empty)).map(_ -- add ++ rem)
+          }
         }
       case _ => None
     }
@@ -195,9 +206,9 @@ case class Operation(op: Exp, parameters: List[Exp]) extends Exp {
       Operation(op.replace(n(-1), func), (parameters.indices zip parameters).map{case (i,e) => e.replace(n(i), func)}.toList)
   }
 
-  override def matchExp(exp: Exp, bounds: Map[Variable, Option[Variable]], params: Map[Variable, Option[Exp]]): Option[(Map[Variable, Option[Variable]], Map[Variable, Option[Exp]])] =
+  override def matchExp(exp: Exp, headMatch: HeadMatch): Option[HeadMatch] =
     exp match {
-      case Operation(o, ps) => (Option((bounds, params)) /: ((op :: parameters) zip (o :: ps)))((re, e) => re.flatMap{case (b, p) => e._1.matchExp(e._2, b, p)})
+      case Operation(o, ps) => (Option(headMatch) /: ((op :: parameters) zip (o :: ps)))((re, e) => re.flatMap(m => e._1.matchExp(e._2, m)))
       case _ => None
     }
 }

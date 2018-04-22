@@ -2,9 +2,13 @@ package algebraic.manipulator
 
 sealed trait Type extends Depending
 
-case class SimpleType(name: String) extends Type {
-  override def dependencies: Set[String] = Set(name)
-  override def toString: String = name
+case object AnyType extends Type {
+  override def dependencies: Set[String] = Set.empty
+}
+
+case class SimpleType(name: String, gen: List[Type]) extends Type {
+  override def dependencies: Set[String] = gen.flatMap(_.dependencies).toSet + name
+  override def toString: String = if (gen.isEmpty) name else s"$name[${gen.mkString(",")}]"
 }
 
 case class TupleType(types: List[Type]) extends Type {

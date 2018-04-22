@@ -15,7 +15,7 @@ using base.Div
 using base.Pow
 using base.Log
 
-define fn diff(Complex -> Complex f) = x -> lim(0, h -> div(sub(f(add(x,h)),f(x)),h))
+define fn diff<x,h>(Complex -> Complex f) = x -> lim(0, h -> div(sub(f(add(x,h)),f(x)),h))
 
 work Definition<h>(Complex -> Complex f, Complex x) {
     let 2 diff(f)(x)

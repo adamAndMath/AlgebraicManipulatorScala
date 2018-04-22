@@ -26,7 +26,7 @@ work PowLn(Complex a) {
 	pow(e,ln(a))=a
 }
 
-work Inverse() {
+work Inverse {
 	let 2 ln(e)
 	unwrap:1
 	substitute Log.Inverse:1
@@ -34,7 +34,7 @@ work Inverse() {
 	ln(e)=1
 }
 
-work Singularity() {
+work Singularity {
 	let 2 ln(1)
 	unwrap:1
 	substitute Log.Singularity:1

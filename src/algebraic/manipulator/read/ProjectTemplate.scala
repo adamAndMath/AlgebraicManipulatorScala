@@ -54,7 +54,7 @@ object ProjectTemplate {
 
     override def getFile(path: List[String]): FileTemplate =
       if (path.isEmpty) file
-      else throw new IllegalArgumentException
+      else throw new IllegalArgumentException(s"${path.mkString(".")} is not reachable from ${file.path.mkString(".")}")
 
     override def findFile(path: List[String]): FileTemplate =
       if (path.isEmpty) file

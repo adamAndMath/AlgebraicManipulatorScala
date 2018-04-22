@@ -10,6 +10,7 @@ import algebraic.manipulator.function._
 import algebraic.manipulator.manipulation._
 import algebraic.manipulator.objects._
 import algebraic.manipulator.options.Options
+import algebraic.manipulator.specifiers.Header
 import algebraic.manipulator.structure._
 
 object LatexWriter {
@@ -84,7 +85,7 @@ object LatexWriter {
     case _: Assumption => AssumptionLocation
     case _: AssumedFunction => IgnoredLocation
     case SimpleStructure => IgnoredLocation
-    case InductiveStructure(_, _) => DefinitionLocation
+    case InductiveStructure(_, _, _) => DefinitionLocation
     case _: ObjectElement => DefinitionLocation
     case _: FunctionElement => DefinitionLocation
     case _: Identity => ProofLocation
@@ -94,11 +95,11 @@ object LatexWriter {
   def writeElementDefinition(name: String, element: Element): String = element match {
     case AssumedObject => s"Let $name be an object"
     case SimpleObject(exp) => s"Let $$${writeExp(Variable(name))} = ${writeExp(exp)}$$"
-    case InductiveStructure(base, steps) =>
-      val typeOut = writeType(SimpleType(name))
+    case InductiveStructure(header, base, steps) =>
+      val typeOut = writeType(SimpleType(name, Nil))
       s"Let $$$typeOut$$ be the smallest set that satisfies " +
-        s"$$${writeDefinition(Header(Nil, base.params))}${writeExp(base.exp)} \\in $typeOut$$" +
-        steps.map(step => s" and $$${writeDefinition(Header(Nil, Definition(SimpleType(name), step.v.name) :: step.params))}${writeExp(step.exp)} \\in $typeOut$$").mkString
+        s"$$${writeDefinition(header)}${writeDefinition(Header(Nil, Nil, base.params))}${writeExp(base.exp)} \\in $typeOut$$" +
+        steps.map(step => s" and $$${writeDefinition(Header(Nil, Nil, Definition(SimpleType(name, Nil), step.v) :: step.params))}${writeExp(step.exp)} \\in $typeOut$$").mkString
     case SimpleFunction(header, exp) => s"Let $$${writeExp(Operation(Variable(name), header.parameters.map(_.variable)))} = ${writeExp(exp)}$$"
     case InductiveFunction(header, base, steps) =>
       s"Let $$${writeExp(Operation(Variable(name), header.parameters.map(_.variable)))} = \n" +
@@ -162,7 +163,7 @@ object LatexWriter {
 
   def getInputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
-    case Substitute(positions, path, from, _, _, _) =>
+    case Substitute(positions, path, from, _, _) =>
       val identity = env(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(from).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
@@ -173,7 +174,7 @@ object LatexWriter {
 
   def getOutputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
-    case Substitute(positions, path, _, to, _, _) =>
+    case Substitute(positions, path, _, to, _) =>
       val identity = env(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(to).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
@@ -184,12 +185,12 @@ object LatexWriter {
 
   def writeManipulation(env: Environment, manipulation: Manipulation): String = manipulation match {
     case Call(temp, exp) => s"Call $$${writeExp(exp, exp.tree.filter(_ == temp).map(_ => colors.head))}$$"
-    case Substitute(_, path, from, to, _, _) =>
+    case Substitute(_, path, from, to, _) =>
       val identity = env(path).asInstanceOf[Identity]
       writeIdentityReference(env.toFull(path), identity.header, List(from, to).map(identity.result))
     case Rename(_, from, to) => s"Renaming $from to $to"
     case Wrap(Variable(name), _) => env(List(name)) match {
-      case SimpleObject(exp) => writeIdentityReference(env.toFull(List(name)), Header(Nil, Nil), List(Variable(name), exp))
+      case SimpleObject(exp) => writeIdentityReference(env.toFull(List(name)), Header(Nil, Nil, Nil), List(Variable(name), exp))
       case SimpleFunction(header, exp) => writeIdentityReference(env.toFull(List(name)), header, List(Operation(Variable(name), header.parameters.map(_.variable)), exp))
     }
     case Wrap(Lambda(params, e), _) =>
@@ -220,7 +221,7 @@ object LatexWriter {
     }
 
   def writeType(t: Type): String = t match {
-    case SimpleType(n) => expWriter.writeType(n)
+    case SimpleType(n, gen) => expWriter.writeType(n) + s"\\left(${gen.map(writeType).mkString(",")}\\right)"
     case FuncType(from, to) => s"\\left(${writeType(from)} \\rightarrow ${writeType(to)}\\right)"
     case TupleType(ts) => s"\\left(${ts.map(writeType).mkString(",")}\\right)"
   }

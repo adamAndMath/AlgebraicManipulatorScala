@@ -1,9 +1,10 @@
 package algebraic.manipulator.read
 
-import algebraic.manipulator.{Environment, Exp, Header, Type}
+import algebraic.manipulator.{Environment, Exp}
 import algebraic.manipulator.function._
 import algebraic.manipulator.read.ProofReader._
 import algebraic.manipulator.read.Tokens._
+import algebraic.manipulator.specifiers.{Header, TypeHeader}
 
 trait FunctionTemplate extends ElementTemplate {
   override def apply(env: Environment): FunctionElement
@@ -16,9 +17,9 @@ object FunctionTemplate {
     ("inductive" -> (readInductive(_: Tokens)))
 
   def readAssumption(tokens: Tokens.Tokens): Read[AssumedFunctionTemplate] = {
-    val (params, tail) = tokens.expect(PARENTHESES, _.readList(COMMA, readType))
+    val (header, tail) = readTypeHeader(tokens)
 
-    (AssumedFunctionTemplate(params), tail.ignore(SEMI))
+    (AssumedFunctionTemplate(header), tail.ignore(SEMI))
   }
 
   def readDefine(tokens: Tokens.Tokens): Read[SimpleFunctionTemplate] = {
@@ -54,10 +55,10 @@ object FunctionTemplate {
     (InductiveStep(params.getOrElse(Nil), step, exp), t3.ignore(SEMI))
   }
 
-  case class AssumedFunctionTemplate(params: List[Type]) extends FunctionTemplate {
-    override def apply(env: Environment): FunctionElement = AssumedFunction(params)
+  case class AssumedFunctionTemplate(header: TypeHeader) extends FunctionTemplate {
+    override def apply(env: Environment): FunctionElement = AssumedFunction(header)
 
-    override def dependencies: Set[String] = params.flatMap(_.dependencies).toSet
+    override def dependencies: Set[String] = header.dependencies
   }
 
   case class SimpleFunctionTemplate(header: Header, exp: Exp) extends FunctionTemplate {

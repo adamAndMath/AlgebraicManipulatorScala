@@ -6,6 +6,7 @@ import java.nio.file
 import algebraic.manipulator._
 import algebraic.manipulator.manipulation._
 import algebraic.manipulator.read.Tokens._
+import algebraic.manipulator.specifiers.{Header, Specifier, TypeHeader}
 
 import scala.io.Source
 
@@ -103,14 +104,15 @@ object ProofReader {
       val (tps, tail) = tokens.readList(COMMA, PARENTHESES, readType)
       (TupleType(tps), tail)
     } else {
-      val (tp, tail) = tokens.string()
-      (SimpleType(tp), tail)
+      val (tp, t1) = tokens.string()
+      val (gen, t2) = t1.whenBlock(BRACKETS, _.readList(COMMA, readType))
+      (SimpleType(tp, gen.getOrElse(Nil)), t2)
     }
 
   def readDefinition(tokens: Tokens): Read[Definition] = {
     val (tp, t1) = readType(tokens)
-    val (name, t2) = t1.string()
-    (Definition(tp, name), t2)
+    val (v, t2) = readVariable(t1)
+    (Definition(tp, v), t2)
   }
 
   def readManipulation(tokens: Tokens): Read[Manipulation] = {
@@ -140,11 +142,10 @@ object ProofReader {
 
       (path, ft.getOrElse(0->1), t2)
     }
-    val (dum, t2) = t1.whenBlock(LESSGREAT, _.readList(COMMA, _.option(DASH, readVariable)))
-    val (par, t3) = t2.whenBlock(PARENTHESES, _.readList(COMMA, _.option(DASH, readExp)))
-    val (pos, t4) = readTree(t3.expect(COLON))
+    val (spe, t2) = t1.whileNot(COLON, readSpecifier)
+    val (pos, t3) = readTree(t2.expect(COLON))
 
-    (Substitute(pos, path, from, to, dum, par), t4)
+    (Substitute(pos, path, from, to, spe), t3)
   }
 
   def readRename(tokens: Tokens): Read[Rename] = {
@@ -167,11 +168,27 @@ object ProofReader {
     (Unwrap(pos), tail)
   }
 
-  def readHeader(tokens: Tokens): Read[Header] = {
-    val (dum, t1) = tokens.whenBlock(LESSGREAT, _.readList(COMMA, readVariable))
-    val (par, t2) = t1.readList(COMMA, PARENTHESES, readDefinition)
+  def readSpecifier(tokens: Tokens): Read[Specifier] = {
+    val (gen, t1) = tokens.whenBlock(BRACKETS, _.readList(COMMA, _.option(DASH, readVariable)))
+    val (dum, t2) = t1.whenBlock(LESSGREAT, _.readList(COMMA, _.option(DASH, readVariable)))
+    val (par, t3) = t2.whenBlock(PARENTHESES, _.readList(COMMA, _.option(DASH, readExp)))
 
-    (Header(dum.getOrElse(List.empty), par), t2)
+    (Specifier(gen, dum, par), t3)
+  }
+
+  def readTypeHeader(tokens: Tokens): Read[TypeHeader] = {
+    val (gen, t1) = tokens.whenBlock(BRACKETS, _.readList(COMMA, readVariable))
+    val (par, t2) = t1.readList(COMMA, PARENTHESES, readType)
+
+    (TypeHeader(gen.getOrElse(Nil), par), t2)
+  }
+
+  def readHeader(tokens: Tokens): Read[Header] = {
+    val (gen, t1) = tokens.whenBlock(BRACKETS, _.readList(COMMA, readVariable))
+    val (dum, t2) = t1.whenBlock(LESSGREAT, _.readList(COMMA, readVariable))
+    val (par, t3) = t2.whenBlock(PARENTHESES, _.readList(COMMA, readDefinition))
+
+    (Header(gen.getOrElse(Nil), dum.getOrElse(Nil), par.getOrElse(Nil)), t3)
   }
 
   def readElement(tokens: Tokens): Read[(String, ElementTemplate)] = {

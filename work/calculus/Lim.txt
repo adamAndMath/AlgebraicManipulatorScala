@@ -16,5 +16,5 @@ assume Func<x>(Complex a, Complex -> Complex f, Complex -> Complex g)
 assume Func2<x>(Complex a, (Complex, Complex) -> Complex f, Complex -> Complex g, Complex -> Complex h)
     lim(a, x -> f(g(x), h(x))) = f(lim(a, g), lim(a, h));
 
-assume Reciprocal<x>()
+assume Reciprocal<x>
     lim(inf, x -> div(1, x)) = 0;

@@ -1,7 +1,8 @@
 package algebraic.manipulator.function
 
-import algebraic.manipulator.{Element, Type}
+import algebraic.manipulator.specifiers.TypeHeader
+import algebraic.manipulator.Element
 
 trait FunctionElement extends Element {
-  def paramTypes: List[Type]
+  def typeHeader: TypeHeader
 }

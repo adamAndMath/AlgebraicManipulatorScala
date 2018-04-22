@@ -4,6 +4,7 @@ import algebraic.manipulator._
 import algebraic.manipulator.latex.ExpWriter.ExpCase
 import algebraic.manipulator.read.{ProofReader, Tokens}
 import algebraic.manipulator.read.Tokens._
+import algebraic.manipulator.specifiers.Header
 
 import scala.io.Source
 
@@ -39,14 +40,16 @@ case class ExpWriter(typeNames: Map[String, String], varNames: Map[Variable, Str
 
 object ExpWriter {
   case class ExpCase(variables: List[Variable], exp: Exp, layout: ExpLayout) {
+    private val headMatch = Header(Nil, variables, variables.map(Definition(AnyType, _))).toMatch
+
     def apply(w: ExpWriter, e: Exp, textColor: PathTree[String], backColor: PathTree[String], binding: Int): String = {
-      val (bound, params) = exp.matchExp(e, variables.map(_ -> None).toMap, variables.map(_ -> None).toMap).get
-      layout(w, e, textColor, backColor, binding, exp, params.map{case (k, v) => k -> v.orElse(bound(k))})
+      val re = exp.matchExp(e, headMatch).get
+      layout(w, e, textColor, backColor, binding, exp, re.parameters.map{case (k, v) => k.variable -> v.orElse(re.dummies(k.variable))})
     }
 
     def matches(e: Exp): Boolean =
       try {
-        exp.matchExp(e, variables.map(_ -> None).toMap, variables.map(_ -> None).toMap).exists{case (bound, params) => bound.forall{case (k, b) => b.flatMap(b => params(k).map(b == _)).getOrElse(true)}}
+        exp.matchExp(e, headMatch).exists(re => re.dummies.forall{case (k, b) => b.flatMap(b => re.parameters(Definition(AnyType, k)).map(b == _)).getOrElse(true)})
       } catch { case _: Throwable => false}
   }
 

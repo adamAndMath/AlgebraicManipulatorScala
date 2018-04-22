@@ -1,19 +1,7 @@
 package algebraic.manipulator
 
 import algebraic.manipulator.manipulation.Manipulation
-
-case class Header(dummies: List[Variable], parameters: List[Definition]) extends Depending {
-  override def dependencies: Set[String] = parameters.flatMap(_.dependencies).toSet
-
-  override def toString: String =
-    if (dummies.isEmpty) s"(${parameters.mkString(",")})"
-    else s"<${dummies.mkString(",")}>(${parameters.mkString(",")})"
-
-  def scope(deps: Set[String]): Set[String] = deps -- parameters.map(_.name) ++ dependencies
-  def scopeWithDummies(deps: Set[String]): Set[String] = deps -- parameters.map(_.name) -- dummies.map(_.name) ++ dependencies
-  def bind(env: Environment): Environment = env.bind(parameters)
-  def bindWithDummies(env: Environment):Environment = env.bind(parameters).bind(dummies.map(_.name).toSet)
-}
+import algebraic.manipulator.specifiers.Header
 
 abstract class Identity(val header: Header, val result: List[Exp]) extends Element {
   assert(result.flatMap(_.getBound).forall(header.dummies.contains))
@@ -106,30 +94,22 @@ sealed abstract class InductiveStep(header: Header, result: List[Exp], val induc
   val proof: Identity
 
   def bindStep(env: Environment): Environment =
-    env + ("step" -> new Assumption(Header(header.dummies, header.parameters.filterNot(d => inductives.contains(d.variable))), result))
+    env + ("step" -> new Assumption(header.mapPars(_.filterNot(d => inductives.contains(d.variable))), result))
 
   override def dependencies: Set[String] =
-    Header(Nil, params).scope(proof.dependencies - "step" ++ exp.dependencies)
+    Header(Nil, Nil, params).scope(proof.dependencies - "step" ++ exp.dependencies)
 }
 
 class InductiveAssumedStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp)
   extends InductiveStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp) {
   override val proof: AssumedProof =
-    new AssumedProof(Header(header.dummies, header.parameters ++ params), result.map(_.set(v -> exp)), result)
+    new AssumedProof(header.mapPars(_ ++ params), result.map(_.set(v -> exp)), result)
 }
 
 class InductiveProofStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp, count: Int, origin: Exp)
   extends InductiveStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp) {
   override val proof: Proof =
-    new Proof(Header(header.dummies, header.parameters ++ params), result.map(_.set(v -> exp)), count, origin)
+    new Proof(header.mapPars(_ ++ params), result.map(_.set(v -> exp)), count, origin)
 
-  override def dependencies: Set[String] = super.dependencies ++ Header(Nil, params).scope(origin.dependencies)
+  override def dependencies: Set[String] = super.dependencies ++ Header(Nil, Nil, params).scope(origin.dependencies)
 }
-
-/*case class StepEnvironment(env: Environment, header: Header, result: List[Exp], inductives: Map[Variable, Exp]) extends Environment {
-  val assumption = new Assumption(Header(header.dummies, header.parameters.filterNot(d => inductives.contains(d.variable))), result)
-  override val path: Path = env.path + ""
-
-  override def apply(path: Path): Element = if (path == Path("step")) assumption else env.apply(path)
-  override def toFull(path: Path): Path = if (path == Path("step")) this.path + "step" else env.toFull(path)
-}*/

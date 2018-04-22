@@ -1,7 +1,7 @@
 package algebraic.manipulator
 
-case class Definition(varType: Type, name: String) extends Depending {
-  def variable: Variable = Variable(name)
+case class Definition(varType: Type, variable: Variable) extends Depending {
+  def name: String = variable.name
 
   override def dependencies: Set[String] = varType.dependencies
 

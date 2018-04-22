@@ -18,7 +18,8 @@ trait Environment extends Element {
 
   def scope(name: String): Environment.Scope = new Environment.Scope(path :+ name, this)
   def bind(params: List[Definition]): Environment = bind(params.map(_.name).toSet)
-  def bind(bound: Set[String]): Environment = Environment.SimpleEnvironment(this, bound)
+  def bind(bound: Set[String]): Environment = bind(bound.map(_ -> Environment.empty).toMap)
+  def bind(bound: Map[String, Element]): Environment = Environment.SimpleEnvironment(this, bound)
   def +(e: (String, Element)): Environment = Environment.Compound(this, e._1, e._2)
 }
 
@@ -57,9 +58,9 @@ object Environment {
     override def validate(env: Environment): Traversable[(List[String], String)] = element.validate(env)
   }
 
-  case class SimpleEnvironment(env: Environment, bound: Set[String]) extends Environment {
+  case class SimpleEnvironment(env: Environment, bound: Map[String, Element]) extends Environment {
     override val path: List[String] = env.path
-    override def apply(path: String): Element = throw new IllegalStateException
+    override def apply(path: String): Element = bound(path)
     override def contains(name: String): Boolean = bound.contains(name)
 
     override def find(path: List[String]): Element =

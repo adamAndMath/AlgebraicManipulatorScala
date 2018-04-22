@@ -1,9 +1,10 @@
 package algebraic.manipulator.function
 
 import algebraic.manipulator._
+import algebraic.manipulator.specifiers.{Header, TypeHeader}
 
 case class InductiveFunction(header: Header, base: InductiveBase, steps: List[InductiveStep]) extends FunctionElement {
-  override def paramTypes: List[Type] = header.parameters.map(_.varType)
+  override def typeHeader: TypeHeader = header.toType
 
   override def dependencies: Set[String] =
     header.scope((base :: steps).flatMap(_.dependencies).toSet)
@@ -17,5 +18,5 @@ case class InductiveBase(inductive: Variable, value: Exp, exp: Exp) extends Depe
 
 case class InductiveStep(params: List[Definition], step: Exp, exp: Exp) extends Depending {
   override def dependencies: Set[String] =
-    Header(Nil, params).scope(step.dependencies ++ exp.dependencies)
+    Header(Nil, Nil, params).scope(step.dependencies ++ exp.dependencies)
 }

@@ -11,14 +11,14 @@ inductive fn factorial(Natural n) {
     step add(n,1) => mult(add(n,1),factorial(n))
 }
 
-work Zero() {
+work Zero {
     let 2 factorial(0)
     unwrap:1
 } result {
     factorial(0) = 1
 }
 
-work One() {
+work One {
     let 2 factorial(1)
     substitute ~Add.IdentityLeft:1,0
     unwrap:1

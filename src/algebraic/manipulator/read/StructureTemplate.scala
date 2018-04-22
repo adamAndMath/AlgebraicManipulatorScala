@@ -3,6 +3,7 @@ package algebraic.manipulator.read
 import algebraic.manipulator.Environment
 import algebraic.manipulator.read.ProofReader._
 import algebraic.manipulator.read.Tokens._
+import algebraic.manipulator.specifiers.Header
 import algebraic.manipulator.structure._
 
 trait StructureTemplate extends ElementTemplate {
@@ -16,11 +17,15 @@ object StructureTemplate {
 
   def readAssumption(tokens: Tokens.Tokens): Read[StructureTemplate] = (SimpleStructureTemplate, tokens)
 
-  def readInductive(tokens: Tokens.Tokens): Read[InductiveStructureTemplate] = tokens.expect(BLOCK, tokens => {
-    val (base, t1) = readInductiveBase(tokens)
-    val (steps, t2) = t1.whileNot(CLOSE_BLOCK, readInductiveStep)
-    (InductiveStructureTemplate(base, steps), t2)
-  })
+  def readInductive(tokens: Tokens.Tokens): Read[InductiveStructureTemplate] = {
+    val (header, t1) = readHeader(tokens)
+
+    t1.expect(BLOCK, t1 => {
+      val (base, t2) = readInductiveBase(t1)
+      val (steps, t3) = t2.whileNot(CLOSE_BLOCK, readInductiveStep)
+      (InductiveStructureTemplate(header, base, steps), t3)
+    })
+  }
 
   def readInductiveBase(tokens: Tokens): Read[InductiveBase] = {
     val (params, t1) = tokens.expect("base").whenBlock(PARENTHESES, _.readList(COMMA, readDefinition))
@@ -41,8 +46,8 @@ object StructureTemplate {
     override def dependencies: Set[String] = Set.empty
   }
 
-  case class InductiveStructureTemplate(base: InductiveBase, steps: List[InductiveStep]) extends StructureTemplate {
-    override def apply(env: Environment): Structure = InductiveStructure(base, steps)
+  case class InductiveStructureTemplate(header: Header, base: InductiveBase, steps: List[InductiveStep]) extends StructureTemplate {
+    override def apply(env: Environment): Structure = InductiveStructure(header, base, steps)
 
     override def dependencies: Set[String] = (base :: steps).flatMap(_.dependencies).toSet
   }

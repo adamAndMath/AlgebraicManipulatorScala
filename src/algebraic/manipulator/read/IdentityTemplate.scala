@@ -4,6 +4,7 @@ import algebraic.manipulator._
 import algebraic.manipulator.manipulation.Manipulation
 import algebraic.manipulator.read.ProofReader._
 import algebraic.manipulator.read.Tokens._
+import algebraic.manipulator.specifiers.Header
 
 trait IdentityTemplate extends ElementTemplate {
   override def apply(env: Environment): Identity
@@ -131,7 +132,7 @@ object IdentityTemplate {
 
   sealed abstract class InductiveStepTemplate(v: Variable, params: List[Definition], exp: Exp, manipulations: List[Manipulation]) extends Depending {
     override def dependencies: Set[String] =
-      Header(Nil, params).scope((exp :: manipulations).flatMap(_.dependencies).toSet -- Set("step"))
+      Header(Nil, Nil, params).scope((exp :: manipulations).flatMap(_.dependencies).toSet -- Set("step"))
 
     def apply(env: Environment, proof: InductionProof): Unit
   }
