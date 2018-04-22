@@ -4,17 +4,17 @@ import Infinity;
 
 assume fn lim(Complex, Complex -> Complex)
 
-assume Div<x>(Complex a)
+assume ide Div<x>(Complex a)
     lim(a, x -> div(x,x)) = 1;
 
-assume Resolve(Complex a, Complex -> Complex f)
+assume ide Resolve(Complex a, Complex -> Complex f)
     lim(a, f) = f(a);
 
-assume Func<x>(Complex a, Complex -> Complex f, Complex -> Complex g)
+assume ide Func<x>(Complex a, Complex -> Complex f, Complex -> Complex g)
     lim(a, x -> f(g(x))) = f(lim(a, g)) = lim(g(a), f);
 
-assume Func2<x>(Complex a, (Complex, Complex) -> Complex f, Complex -> Complex g, Complex -> Complex h)
+assume ide Func2<x>(Complex a, (Complex, Complex) -> Complex f, Complex -> Complex g, Complex -> Complex h)
     lim(a, x -> f(g(x), h(x))) = f(lim(a, g), lim(a, h));
 
-assume Reciprocal<x>
+assume ide Reciprocal<x>
     lim(inf, x -> div(1, x)) = 0;

@@ -5,13 +5,13 @@ import Mult
 
 assume fn div(Complex, Complex)
 
-assume MultDiv(Complex a, Complex b)
+assume ide MultDiv(Complex a, Complex b)
     mult(div(a,b),b)=a
 
-assume DivMult(Complex a, Complex b)
+assume ide DivMult(Complex a, Complex b)
     div(mult(a,b),b)=a
 
-work Identity(Complex a) {
+prove ide Identity(Complex a) {
     let 2 a;
     substitute ~MultDiv(-,1):1;
     substitute Mult.IdentityRight:1;
@@ -19,7 +19,7 @@ work Identity(Complex a) {
     a=div(a,1)
 }
 
-work Inverse(Complex a) {
+prove ide Inverse(Complex a) {
     let 2 1;
     substitute ~DivMult(-,a):0;
     substitute Mult.IdentityLeft:0,0;
@@ -27,7 +27,7 @@ work Inverse(Complex a) {
     div(a,a)=1
 }
 
-work AsMult(Complex a, Complex b) {
+prove ide AsMult(Complex a, Complex b) {
     let 2 div(a,b);
     substitute ~Mult.IdentityRight:1,0;
     substitute ~MultDiv(-,b):1,0,1;
@@ -37,7 +37,7 @@ work AsMult(Complex a, Complex b) {
     div(a,b)=mult(a,div(1,b))
 }
 
-work Commute(Complex a, Complex b, Complex c) {
+prove ide Commute(Complex a, Complex b, Complex c) {
     let 3 div(div(a,b),c);
     substitute AsMult:1;
     substitute AsMult:1,0;
@@ -54,7 +54,7 @@ work Commute(Complex a, Complex b, Complex c) {
     div(div(a,b),c)=div(div(a,c),b)=div(a,mult(b,c))
 }
 
-work Commute2(Complex a, Complex b, Complex c) {
+prove ide Commute2(Complex a, Complex b, Complex c) {
     let 4 div(mult(a,b),c);
     substitute AsMult:[1|2|3];
     substitute Mult.Associate:1;
@@ -68,7 +68,7 @@ work Commute2(Complex a, Complex b, Complex c) {
     div(mult(a,b),c)=mult(a,div(b,c))=mult(div(a,c),b)=div(a,div(c,b))
 }
 
-work MultFrac(Complex a, Complex b, Complex c, Complex d) {
+prove ide MultFrac(Complex a, Complex b, Complex c, Complex d) {
     let 2 mult(div(a,c),div(b,d))
     substitute Commute2[1->0]:1
     substitute Commute2[2->0]:1,0
@@ -77,7 +77,7 @@ work MultFrac(Complex a, Complex b, Complex c, Complex d) {
     mult(div(a,c),div(b,d))=div(mult(a,b),mult(c,d))
 }
 
-work Distribute(Complex f, Complex a, Complex b) {
+prove ide Distribute(Complex f, Complex a, Complex b) {
     let 2 div(add(a,b),f);
     substitute AsMult[0->1]:1;
     substitute Mult.Commute:1;
@@ -88,7 +88,7 @@ work Distribute(Complex f, Complex a, Complex b) {
     div(add(a,b),f)=add(div(a,f),div(b,f))
 }
 
-work DistributeSub(Complex f, Complex a, Complex b) {
+prove ide DistributeSub(Complex f, Complex a, Complex b) {
     let 2 sub(div(a,f),div(b,f));
     substitute ~Sub.AddSub(-,b):0,0,0;
     substitute Distribute:0,0;
@@ -97,7 +97,7 @@ work DistributeSub(Complex f, Complex a, Complex b) {
     div(sub(a,b),f)=sub(div(a,f),div(b,f))
 }
 
-work Negate(Complex a) {
+prove ide Negate(Complex a) {
     let 2 a;
     substitute ~DivMult(-,1):1;
     substitute Mult.Commute:1,0;
@@ -106,7 +106,7 @@ work Negate(Complex a) {
     a=div(1,div(1,a))
 }
 
-work Singularity(Complex a) {
+prove ide Singularity(Complex a) {
     let 2 div(sub(1,1),a);
     substitute DistributeSub:0;
     substitute Sub.Inverse:[0|1,0];

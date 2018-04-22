@@ -3,13 +3,13 @@ import Add
 
 assume fn sub(Complex, Complex)
 
-assume AddSub(Complex a, Complex b)
+assume ide AddSub(Complex a, Complex b)
     add(sub(a,b),b)=a
 
-assume SubAdd(Complex a, Complex b)
+assume ide SubAdd(Complex a, Complex b)
     sub(add(a,b),b)=a
 
-work IdentityRight(Complex a) {
+prove ide IdentityRight(Complex a) {
     let 2 sub(a,0);
     substitute ~Add.IdentityRight:1,0;
     substitute SubAdd(-,0):1;
@@ -17,7 +17,7 @@ work IdentityRight(Complex a) {
     sub(a,0)=a
 }
 
-work Inverse(Complex a) {
+prove ide Inverse(Complex a) {
     let 2 0;
     substitute ~SubAdd(-,a):0;
     substitute Add.IdentityLeft:0,0;
@@ -25,7 +25,7 @@ work Inverse(Complex a) {
     sub(a,a)=0
 }
 
-work AsAdd(Complex a, Complex b) {
+prove ide AsAdd(Complex a, Complex b) {
     let 2 sub(a,b);
     substitute ~Add.IdentityRight:1,0;
     substitute ~AddSub(-,b):1,0,1;
@@ -35,7 +35,7 @@ work AsAdd(Complex a, Complex b) {
     sub(a,b)=add(a,sub(0,b))
 }
 
-work Commute(Complex a, Complex b, Complex c) {
+prove ide Commute(Complex a, Complex b, Complex c) {
     let 3 sub(sub(a,b),c);
     substitute AsAdd:1;
     substitute AsAdd:1,0;
@@ -52,7 +52,7 @@ work Commute(Complex a, Complex b, Complex c) {
     sub(sub(a,b),c)=sub(sub(a,c),b)=sub(a,add(b,c))
 }
 
-work Commute2(Complex a, Complex b, Complex c) {
+prove ide Commute2(Complex a, Complex b, Complex c) {
     let 4 sub(add(a,b),c);
     substitute AsAdd:[1|2|3];
     substitute Add.Associate:1;
@@ -66,7 +66,7 @@ work Commute2(Complex a, Complex b, Complex c) {
     sub(add(a,b),c)=add(a,sub(b,c))=add(sub(a,c),b)=sub(a,sub(c,b))
 }
 
-work Negate(Complex a) {
+prove ide Negate(Complex a) {
     let 2 a;
     substitute ~SubAdd(-,0):1;
     substitute Add.Commute:1,0;

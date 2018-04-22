@@ -6,19 +6,19 @@ import Div
 
 assume fn pow(Complex, Complex)
 
-assume Definition(Complex a, Complex n, Complex m)
+assume ide Definition(Complex a, Complex n, Complex m)
     pow(a,add(n,m))=mult(pow(a,n),pow(a,m));
 
-assume Distribute(Complex a, Complex b, Complex n)
+assume ide Distribute(Complex a, Complex b, Complex n)
     pow(mult(a,b),n)=mult(pow(a,n),pow(b,n));
 
-assume Identity(Complex a)
+assume ide Identity(Complex a)
     pow(a,1)=a;
 
-assume Combine(Real a, Complex n, Complex m)//[a>0]
+assume ide Combine(Real a, Complex n, Complex m)//[a>0]
     pow(pow(a,n),m)=pow(a,mult(n,m));
 
-work Division(Complex a, Complex n, Complex m) {
+prove ide Division(Complex a, Complex n, Complex m) {
     let 2 div(pow(a,n),pow(a,m));
     substitute ~Sub.AddSub(-,m):0,0,1;
     substitute Definition:0,0;
@@ -27,7 +27,7 @@ work Division(Complex a, Complex n, Complex m) {
     pow(a,sub(n,m))=div(pow(a,n),pow(a,m))
 }
 
-work Singularity(Complex a) {
+prove ide Singularity(Complex a) {
     let 2 pow(a,0);
     substitute ~Sub.Inverse(1):1,1;
     substitute Division:1;
@@ -36,7 +36,7 @@ work Singularity(Complex a) {
     pow(a,0)=1
 }
 
-work Singularity2(Complex a) {
+prove ide Singularity2(Complex a) {
     let 2 pow(0,a);
     substitute ~Sub.AddSub(-,1):1,1;
     substitute Definition:1;
@@ -46,7 +46,7 @@ work Singularity2(Complex a) {
     pow(0,a)=0
 }
 
-induction CombineInt(Complex a, Complex n, Integer m) {
+inductive ide CombineInt(Complex a, Complex n, Integer m) {
     base m=1 {
         let 2 pow(a,n)
         substitute ~Identity:0

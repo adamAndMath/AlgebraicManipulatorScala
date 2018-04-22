@@ -11,7 +11,7 @@ using base.Mult
 using base.Div
 using base.Pow
 
-work GeometricSum<i>(Complex a, Integer n) {
+prove ide GeometricSum<i>(Complex a, Integer n) {
     let 2 sum(i -> pow(a,i),0,n)
     substitute ~Sub.AddSub(-,1):1,0,0,1
     substitute Add.Commute:1,0,0,1

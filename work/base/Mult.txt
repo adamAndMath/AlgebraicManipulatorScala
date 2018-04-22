@@ -4,16 +4,16 @@ import Sub
 
 assume fn mult(Complex, Complex)
 
-assume Commute(Complex a, Complex b)
+assume ide Commute(Complex a, Complex b)
     mult(a,b)=mult(b,a);
 
-assume Associate(Complex a, Complex b, Complex c)
+assume ide Associate(Complex a, Complex b, Complex c)
     mult(mult(a,b),c)=mult(a,mult(b,c));
 
-assume IdentityRight(Complex a)
+assume ide IdentityRight(Complex a)
     mult(a,1)=a
 
-work IdentityLeft(Complex a) {
+prove ide IdentityLeft(Complex a) {
     let 2 mult(1,a)
     substitute Commute:1
     substitute IdentityRight:1
@@ -21,10 +21,10 @@ work IdentityLeft(Complex a) {
     mult(1,a)=a
 }
 
-assume Distribute(Complex f, Complex a, Complex b)
+assume ide Distribute(Complex f, Complex a, Complex b)
     mult(f,add(a,b))=add(mult(f,a),mult(f,b));
 
-work DistributeRight(Complex a, Complex b, Complex c) {
+prove ide DistributeRight(Complex a, Complex b, Complex c) {
     let 2 mult(add(a,b),c)
     substitute Commute:1
     substitute Distribute:1
@@ -33,7 +33,7 @@ work DistributeRight(Complex a, Complex b, Complex c) {
     mult(add(a,b),c)=add(mult(a,c),mult(b,c))
 }
 
-work OuterCommute(Complex a, Complex b, Complex c) {
+prove ide OuterCommute(Complex a, Complex b, Complex c) {
     let 2 mult(mult(a,b),c)
     substitute Associate:1
     substitute Commute:1,1
@@ -42,7 +42,7 @@ work OuterCommute(Complex a, Complex b, Complex c) {
     mult(mult(a,b),c)=mult(mult(a,c),b)
 }
 
-work DistributeSub(Complex f, Complex a, Complex b) {
+prove ide DistributeSub(Complex f, Complex a, Complex b) {
     let 2 sub(mult(f,a),mult(f,b));
     substitute ~Sub.AddSub(-,b):0,0,1;
     substitute Distribute:0,0;
@@ -51,7 +51,7 @@ work DistributeSub(Complex f, Complex a, Complex b) {
     mult(f,sub(a,b))=sub(mult(f,a),mult(f,b))
 }
 
-work Singularity(Complex a) {
+prove ide Singularity(Complex a) {
     let 3 0;
     substitute ~Sub.Inverse(a):[1|2];
     substitute ~IdentityRight:[1,[0|1]|2,[0|1]];
@@ -62,7 +62,7 @@ work Singularity(Complex a) {
     0=mult(0,a)=mult(a,0)
 }
 
-work NegAsMult(Complex a) {
+prove ide NegAsMult(Complex a) {
     let 3 sub(0,a);
     substitute Singularity[0->2](a):[1,0|2,0];
     substitute ~IdentityRight:[1,1|2,1];

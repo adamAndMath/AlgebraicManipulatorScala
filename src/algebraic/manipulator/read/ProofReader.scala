@@ -19,6 +19,7 @@ object ProofReader {
     ("unwrap" -> (readUnwrap(_: Tokens)))
 
   var elementReaders: Map[String, Map[String, Tokens => Read[ElementTemplate]]] = Map.empty +
+    ("ide" -> IdentityTemplate.readers) +
     ("struct" -> StructureTemplate.readers) +
     ("object" -> ObjectTemplate.readers) +
     ("fn" -> FunctionTemplate.readers)
@@ -192,28 +193,16 @@ object ProofReader {
   }
 
   def readElement(tokens: Tokens): Read[(String, ElementTemplate)] = {
-    tokens.tail.token match {
-      case STRING(t) if elementReaders.contains(t) =>
-        val (typeName, t1) = tokens.string()
-        val (name, t2) = t1.tail.string()
+    val (typeName, t1) = tokens.string()
+    val (t, t2) = t1.string()
+    val (name, t3) = t2.string()
 
-        if (!elementReaders(t).contains(typeName))
-          throw new TokenException(tokens, s"$typeName is not a valid $t type")
+    if (!elementReaders(t).contains(typeName))
+      throw new TokenException(tokens, s"$typeName is not a valid $t type")
 
-        val (elm, t3) = elementReaders(t)(typeName)(t2)
+    val (elm, t4) = elementReaders(t)(typeName)(t3)
 
-        ((name, elm), t3)
-      case _ =>
-        val (typeName, t1) = tokens.string()
-        val (name, t2) = t1.string()
-
-        if (!IdentityTemplate.readers.contains(typeName))
-          throw new TokenException(tokens, s"$typeName is not a valid identity type")
-
-        val (identity, t3) = IdentityTemplate.readers(typeName)(t2)
-
-        ((name, identity), t3)
-    }
+    ((name, elm), t4)
   }
 
   def readUsingAndImport(tokens: Tokens): Read[(Map[String, List[String]], Set[List[String]])] = {

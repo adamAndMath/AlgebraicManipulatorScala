@@ -2,13 +2,13 @@ import Numbers
 
 assume fn add(Complex, Complex)
 
-assume Commute(Complex a, Complex b)
+assume ide Commute(Complex a, Complex b)
     add(a,b)=add(b,a)
 
-assume IdentityRight(Complex a)
+assume ide IdentityRight(Complex a)
     add(a,0)=a
 
-work IdentityLeft(Complex a) {
+prove ide IdentityLeft(Complex a) {
     let 2 add(0,a)
     substitute Commute:1
     substitute IdentityRight:1
@@ -16,10 +16,10 @@ work IdentityLeft(Complex a) {
     add(0,a)=a
 }
 
-assume Associate(Complex a, Complex b, Complex c)
+assume ide Associate(Complex a, Complex b, Complex c)
     add(add(a,b),c)=add(a,add(b,c))
 
-work OuterCommute(Complex a, Complex b, Complex c) {
+prove ide OuterCommute(Complex a, Complex b, Complex c) {
     let 2 add(add(a,b),c)
     substitute Associate:1
     substitute Commute:1,1

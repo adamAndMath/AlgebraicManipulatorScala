@@ -10,7 +10,7 @@ using base.Log
 
 define fn ln(Complex a) = log(e, a);
 
-work LnPow(Complex a) {
+prove ide LnPow(Complex a) {
     let 2 ln(pow(e,a))
 	unwrap:1
 	substitute Log.LogPow(e,-):1
@@ -18,7 +18,7 @@ work LnPow(Complex a) {
 	ln(pow(e,a))=a
 }
 
-work PowLn(Complex a) {
+prove ide PowLn(Complex a) {
 	let 3 pow(e,ln(a))
 	unwrap:1,1
 	substitute Log.PowLog(e,-):1
@@ -26,7 +26,7 @@ work PowLn(Complex a) {
 	pow(e,ln(a))=a
 }
 
-work Inverse {
+prove ide Inverse {
 	let 2 ln(e)
 	unwrap:1
 	substitute Log.Inverse:1
@@ -34,7 +34,7 @@ work Inverse {
 	ln(e)=1
 }
 
-work Singularity {
+prove ide Singularity {
 	let 2 ln(1)
 	unwrap:1
 	substitute Log.Singularity:1
@@ -42,7 +42,7 @@ work Singularity {
 	ln(1)=0
 }
 
-work Distribute(Complex a, Complex b) {
+prove ide Distribute(Complex a, Complex b) {
 	let 2 log(e,mult(a,b))
 	substitute Log.Distribute:1
 	wrap ln:[0|1,[0|1]]
@@ -50,7 +50,7 @@ work Distribute(Complex a, Complex b) {
 	ln(mult(a,b))=add(ln(a),ln(b))
 }
 
-work DistributeSub(Complex a, Complex b) {
+prove ide DistributeSub(Complex a, Complex b) {
 	let 2 log(e,div(a,b))
 	substitute Log.DistributeSub:1
 	wrap ln:[0|1,[0|1]]
@@ -58,7 +58,7 @@ work DistributeSub(Complex a, Complex b) {
 	ln(div(a,b))=sub(ln(a),ln(b))
 }
 
-work LnMult(Complex a, Complex p) {
+prove ide LnMult(Complex a, Complex p) {
 	let 3 log(e,pow(a,p))
 	substitute Log.LogMult[0->1]:1
 	substitute Log.LogMult[0->2]:2
@@ -67,7 +67,7 @@ work LnMult(Complex a, Complex p) {
 	ln(pow(a,p))=mult(ln(a),p)=mult(p,ln(a))
 }
 
-work ChangeBase(Complex a, Complex b) {
+prove ide ChangeBase(Complex a, Complex b) {
     let 2 log(a,b)
     substitute Log.ChangeBase(-,-,e):1
     wrap ln:1,[0|1]

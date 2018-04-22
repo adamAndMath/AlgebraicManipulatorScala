@@ -13,8 +13,8 @@ trait IdentityTemplate extends ElementTemplate {
 object IdentityTemplate {
   var readers: Map[String, Tokens => Read[IdentityTemplate]] = Map.empty +
     ("assume" -> (readAssumption(_: Tokens))) +
-    ("work" -> (readProof(_: Tokens))) + //TODO:Change work keyword to proof
-    ("induction" -> (readInduction(_: Tokens)))
+    ("prove" -> (readProof(_: Tokens))) +
+    ("inductive" -> (readInduction(_: Tokens)))
 
   def readAssumption(tokens: Tokens): Read[AssumptionTemplate] = {
     val (head, t1) = readHeader(tokens)

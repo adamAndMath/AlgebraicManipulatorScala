@@ -11,14 +11,14 @@ inductive fn factorial(Natural n) {
     step add(n,1) => mult(add(n,1),factorial(n))
 }
 
-work Zero {
+prove ide Zero {
     let 2 factorial(0)
     unwrap:1
 } result {
     factorial(0) = 1
 }
 
-work One {
+prove ide One {
     let 2 factorial(1)
     substitute ~Add.IdentityLeft:1,0
     unwrap:1
@@ -29,14 +29,14 @@ work One {
     factorial(1) = 1
 }
 
-work Succ(Natural n) {
+prove ide Succ(Natural n) {
     let 2 factorial(add(n,1))
     unwrap:1
 } result {
     factorial(add(n,1))=mult(add(n,1),factorial(n))
 }
 
-induction Prod<i>(Natural n) {
+inductive ide Prod<i>(Natural n) {
     base n = 0 {
         let 2 1
         substitute ~Zero:0

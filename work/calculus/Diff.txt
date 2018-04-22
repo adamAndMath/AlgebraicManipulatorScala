@@ -17,7 +17,7 @@ using base.Log
 
 define fn diff<x,h>(Complex -> Complex f) = x -> lim(0, h -> div(sub(f(add(x,h)),f(x)),h))
 
-work Definition<h>(Complex -> Complex f, Complex x) {
+prove ide Definition<h>(Complex -> Complex f, Complex x) {
     let 2 diff(f)(x)
     unwrap:1,-1
     unwrap:1
@@ -25,7 +25,7 @@ work Definition<h>(Complex -> Complex f, Complex x) {
     diff(f)(x)=lim(0, h -> div(sub(f(add(x,h)),f(x)),h))
 }
 
-work Factor<x>(Complex -> Complex f, Complex a) {
+prove ide Factor<x>(Complex -> Complex f, Complex a) {
     let 2 diff(x -> mult(a, f(x)))(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
@@ -40,7 +40,7 @@ work Factor<x>(Complex -> Complex f, Complex a) {
     diff(x -> mult(a, f(x)))(x) = mult(a, diff(f)(x))
 }
 
-work Distribute<x>(Complex -> Complex f, Complex -> Complex g) {
+prove ide Distribute<x>(Complex -> Complex f, Complex -> Complex g) {
     let 2 diff(x -> add(f(x),g(x)))(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
@@ -56,7 +56,7 @@ work Distribute<x>(Complex -> Complex f, Complex -> Complex g) {
     diff(x -> add(f(x), g(x)))(x) = add(diff(f)(x), diff(g)(x))
 }
 
-work DistributeSub<x>(Complex -> Complex f, Complex -> Complex g) {
+prove ide DistributeSub<x>(Complex -> Complex f, Complex -> Complex g) {
     let 2 diff(x -> sub(f(x),g(x)))(x)
     substitute Sub.AsAdd:1,-1,0,0
     substitute Mult.NegAsMult:1,-1,0,0,1
@@ -69,7 +69,7 @@ work DistributeSub<x>(Complex -> Complex f, Complex -> Complex g) {
     diff(x -> sub(f(x), g(x)))(x) = sub(diff(f)(x),diff(g)(x))
 }
 
-work Product<x,h>(Complex -> Complex f, Complex -> Complex g) {
+prove ide Product<x,h>(Complex -> Complex f, Complex -> Complex g) {
     let 2 diff(x -> mult(f(x),g(x)))(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
@@ -121,7 +121,7 @@ work Product<x,h>(Complex -> Complex f, Complex -> Complex g) {
     diff(x -> mult(f(x), g(x)))(x) = add(mult(diff(f)(x),g(x)),mult(f(x),diff(g)(x)))
 }
 
-work Chain<x>(Complex -> Complex f, Complex -> Complex g) {
+prove ide Chain<x>(Complex -> Complex f, Complex -> Complex g) {
     let 2 diff(x -> f(g(x)))(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
@@ -146,7 +146,7 @@ work Chain<x>(Complex -> Complex f, Complex -> Complex g) {
     diff(x -> f(g(x)))(x) = mult(diff(f)(g(x)),diff(g)(x))
 }
 
-work Constant<x>(Complex a) {
+prove ide Constant<x>(Complex a) {
     let 2 diff(x -> a)(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
@@ -158,7 +158,7 @@ work Constant<x>(Complex a) {
     diff(x -> a)(x) = 0
 }
 
-work Line<x>(Complex x) {
+prove ide Line<x>(Complex x) {
 	let 2 diff(x -> x)(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
@@ -169,7 +169,7 @@ work Line<x>(Complex x) {
 	diff(x -> x)(x) = 1
 }
 
-work DiffLn(Complex x) {
+prove ide DiffLn(Complex x) {
 	let 2 diff(ln)(x)
     substitute Definition<h>:1
 	substitute ~Ln.DistributeSub:1,1,0,0;
@@ -194,7 +194,7 @@ work DiffLn(Complex x) {
 	diff(ln)(x) = div(1,x)
 }
 
-work DiffLog<x>(Complex a, Complex x) {
+prove ide DiffLog<x>(Complex a, Complex x) {
 	let 2 diff(x -> log(a,x))(x)
 	substitute Ln.ChangeBase:1,-1,0,0;
 	substitute Div.AsMult:1,-1,0,0;
@@ -207,7 +207,7 @@ work DiffLog<x>(Complex a, Complex x) {
 	diff(x -> log(a,x))(x) = div(1,mult(ln(a),x))
 }
 
-work Exp<x>(Complex x) {
+prove ide Exp<x>(Complex x) {
 	let 2 diff(x -> ln(pow(e,x)))(x)
 	substitute Ln.LnPow:1,-1,0,0
 	wrap x -> pow(e,x):0,-1,0,0,0
@@ -224,7 +224,7 @@ work Exp<x>(Complex x) {
 	diff(x -> pow(e,x))(x) = pow(e,x)
 }
 
-work Exponential<x>(Complex a, Complex x) {
+prove ide Exponential<x>(Complex a, Complex x) {
 	let 2 diff(x -> pow(a,x))(x)
 	substitute ~Ln.PowLn:1,-1,0,0,0
 	substitute Pow.Combine:1,-1,0,0
@@ -244,7 +244,7 @@ work Exponential<x>(Complex a, Complex x) {
 	diff(x -> pow(a,x))(x) = mult(ln(a),pow(a,x))
 }
 
-work DiffPow<x>(Complex n, Complex x) {
+prove ide DiffPow<x>(Complex n, Complex x) {
 	let 2 diff(x -> pow(x,n))(x)
 	substitute ~Ln.PowLn:1,-1,0,0,0
 	substitute Pow.Combine:1,-1,0,0
