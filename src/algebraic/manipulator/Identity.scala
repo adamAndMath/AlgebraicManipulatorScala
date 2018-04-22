@@ -1,10 +1,16 @@
 package algebraic.manipulator
 
-import algebraic.manipulator.manipulation.Manipulation
-import algebraic.manipulator.specifiers.Header
+import algebraic.manipulator.manipulation.{Manipulation, Substitutable}
+import algebraic.manipulator.specifiers.{HeadMatch, Header, Specifier}
 
-abstract class Identity(val header: Header, val result: List[Exp]) extends Element {
+abstract class Identity(val header: Header, val result: List[Exp]) extends Element with Substitutable {
   assert(result.flatMap(_.getBound).forall(header.dummies.contains))
+
+  override def substitute(specifiers: List[Specifier]): (List[Exp], HeadMatch) = specifiers match {
+    case Nil => (result, header.toMatch)
+    case List(s) => (result, s.headMatch(header))
+    case _ => throw new IllegalArgumentException(s"An identity takes up to 1 specifier, but received ${specifiers.length}")
+  }
 }
 
 class Assumption(header: Header, result: List[Exp]) extends Identity(header, result) {

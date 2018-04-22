@@ -9,14 +9,7 @@ case class Substitute(positions: Tree, path: List[String], from: Int, to: Int, s
   override def replace(env: Environment, exp: Exp): Exp = {
     val e = env.find(path)
 
-    val (identity, headMatch) = e match {
-      case i: Identity =>
-        specifiers match {
-          case Nil => (i.result, i.header.toMatch)
-          case List(s) => (i.result, s.headMatch(i.header))
-          case _ => throw new IllegalArgumentException(s"An identity takes up to 1 specifier, but received ${specifiers.length}")
-        }
-    }
+    val (identity, headMatch) = e.asInstanceOf[Substitutable].substitute(specifiers)
 
     val fromExp = identity(from)
 
