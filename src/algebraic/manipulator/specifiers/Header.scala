@@ -16,9 +16,9 @@ case class Header(generics: List[Variable], dummies: List[Variable], parameters:
     deps -- parameters.map(_.name) -- dummies.map(_.name) -- generics.map(_.name) ++ dependencies
 
   def bind(env: Environment): Environment =
-    env.bind(generics.map(_.name -> SimpleStructure).toMap).bind(parameters)
+    env ++ generics.map(_.name -> SimpleStructure).toMap ++ parameters
   def bindWithDummies(env: Environment):Environment =
-    env.bind(generics.map(_.name -> SimpleStructure).toMap).bind(parameters).bind(dummies.map(_.name).toSet)
+    env ++ generics.map(_.name -> SimpleStructure).toMap ++ parameters ++ dummies.map(_.name).toSet
 
   def mapPars(map: List[Definition] => List[Definition]): Header =
     Header(generics, dummies, map(parameters))

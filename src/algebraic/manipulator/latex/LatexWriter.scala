@@ -52,32 +52,36 @@ object LatexWriter {
       "\\begin{document}\n\n" +
       "\\maketitle\n" +
       "\\tableofcontents\n\n" +
-      project.filter(_.isInstanceOf[WorkFile]).map(e => writeFile(e.asInstanceOf[WorkFile])).mkString("\n") +
+      project.filter{ case e: Environment => e.base.isInstanceOf[WorkFile]; case _ => false }.map(e => writeFile(e.asInstanceOf[Environment])).mkString("\n") +
       "\n\\end{document}"
   }
 
-  def writeFile(file: WorkFile): String = {
-    val assumptions = file.names.filter(n => getLocation(file(n)) == AssumptionLocation)
+  def getEnvElements(env: Environment, l: List[(Environment, String, Element)] = Nil): List[(Environment, String, Element)] = env match {
+    case Environment.Compound(e, k, elm) => getEnvElements(e, (e, k, elm)::l)
+    case _ => l
+  }
+
+  def writeFile(file: Environment): String = {
+    val es = getEnvElements(file)
+    val definitions = es.filter(e => getLocation(e._3) == DefinitionLocation)
+    val assumptions = es.filter(e => getLocation(e._3) == AssumptionLocation)
+    val proofs = es.filter(e => getLocation(e._3) == ProofLocation)
 
     s"\\chapter{${file.path.last}}\n" +
-      (file.names.filter(n => getLocation(file(n)) == DefinitionLocation).map(name =>
-        writeElementDefinition(name, file(name))
-      ) ++
+      (definitions.map(e => writeElementDefinition(e._2, e._3)) ++
       {
         if (assumptions.nonEmpty)
           "Given the following assumptions:" ::
-            assumptions.map(name =>
-              s"\\label{${(file.path + name).mkString(":")}}\n" +
-                writeAssumption(file(name))
+            assumptions.map(e =>
+              s"\\label{${(e._1.path :+ e._2).mkString(":")}}\n" +
+                writeAssumption(e._3)
             )
         else Nil
       }).mkString("\\\\\n") + "\n" +
-      file.names
-        .filter(n => getLocation(file(n)) == ProofLocation)
-        .map(name => {
-        s"\\section{$name}\n" +
-          s"\\label{${(file.path + name).mkString(":")}}\n" +
-          writeElement(file, file(name))
+      proofs.map(e => {
+        s"\\section{${e._2}}\n" +
+          s"\\label{${(e._1.path :+ e._2).mkString(":")}}\n" +
+          writeElement(e._1, e._3)
       }).mkString
   }
 
@@ -164,7 +168,7 @@ object LatexWriter {
   def getInputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, from, _, _) =>
-      val identity = env(path).asInstanceOf[Identity]
+      val identity = env.find(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(from).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
     case Rename(positions, _, _) => positions :> colors.head
@@ -175,7 +179,7 @@ object LatexWriter {
   def getOutputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, _, to, _) =>
-      val identity = env(path).asInstanceOf[Identity]
+      val identity = env.find(path).asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(to).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
     case Rename(positions, _, _) => positions :> colors.head
@@ -186,10 +190,10 @@ object LatexWriter {
   def writeManipulation(env: Environment, manipulation: Manipulation): String = manipulation match {
     case Call(temp, exp) => s"Call $$${writeExp(exp, exp.tree.filter(_ == temp).map(_ => colors.head))}$$"
     case Substitute(_, path, from, to, _) =>
-      val identity = env(path).asInstanceOf[Identity]
+      val identity = env.find(path).asInstanceOf[Identity]
       writeIdentityReference(env.toFull(path), identity.header, List(from, to).map(identity.result))
     case Rename(_, from, to) => s"Renaming $from to $to"
-    case Wrap(Variable(name), _) => env(List(name)) match {
+    case Wrap(Variable(name), _) => env.find(List(name)) match {
       case SimpleObject(exp) => writeIdentityReference(env.toFull(List(name)), Header(Nil, Nil, Nil), List(Variable(name), exp))
       case SimpleFunction(header, exp) => writeIdentityReference(env.toFull(List(name)), header, List(Operation(Variable(name), header.parameters.map(_.variable)), exp))
     }

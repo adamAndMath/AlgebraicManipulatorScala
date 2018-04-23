@@ -221,8 +221,8 @@ object ProofReader {
 
   def readFile(path: List[String], tokens: Tokens): FileTemplate = {
     val ((using, imports), t1) = readUsingAndImport(tokens)
-    val (ids, _) = t1.whileNot(EOF, readElement)
-    FileTemplate(path, using, imports, ids)
+    val (es, _) = t1.whileNot(EOF, readElement)
+    FileTemplate(path, using, imports, es)
   }
 
   def readFile(projectPath: file.Path, path: List[String]): FileTemplate = {

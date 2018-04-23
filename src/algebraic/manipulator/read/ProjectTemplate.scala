@@ -8,7 +8,7 @@ sealed trait ProjectTemplate extends Depending {
   def getFile(path: List[String]): FileTemplate
   def findFile(path: List[String]): FileTemplate
   def apply(): Element
-  def apply(name: String, env: Environment.Scope): Element
+  def apply(name: String, env: Environment): Element
 }
 
 object ProjectTemplate {
@@ -28,19 +28,19 @@ object ProjectTemplate {
       else parent.getOrElse(throw new IllegalArgumentException(s"no such path as ${path.mkString(".")}")).findFile(path)
 
     override def apply(): Element = {
-      val folder = new Environment.Scope(Nil, Environment.empty)
+      var folder = Environment.empty
 
       Graph.topologicalSort[String, ProjectTemplate](map, (_, p) => p.dependencies.filter(map.contains))
-        .foreach{case (k, p) => p(k, folder)}
+        .foreach{case (k, p) => folder += (k -> p(k, folder))}
 
       folder
     }
 
-    override def apply(name: String, env: Environment.Scope): Element = {
-      val scope = env.scope(name)
+    override def apply(name: String, env: Environment): Element = {
+      var scope = env.scope(name)
 
       Graph.topologicalSort[String, ProjectTemplate](map, (_, p) => p.dependencies.filter(map.contains))
-        .foreach{case (k, p) => k -> p(k, scope)}
+        .foreach{case (k, p) => scope += (k -> p(k, scope))}
 
       scope
     }
@@ -62,10 +62,6 @@ object ProjectTemplate {
 
     override def apply(): Element = ???
 
-    override def apply(name: String, env: Environment.Scope): Element = {
-      val e = file(name, env)
-      env += (name -> e)
-      e
-    }
+    override def apply(name: String, env: Environment): Element = file(name, env)
   }
 }
