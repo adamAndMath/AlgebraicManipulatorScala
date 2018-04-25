@@ -17,7 +17,7 @@ case class FileTemplate(path: List[String], using: Map[String, List[String]], im
 
   def apply(name: String, env: Environment): Element = {
     try {
-      var file: Environment = new WorkFile(env, name, using, imports.map(env.find(_).asInstanceOf[Environment]))
+      var file: Environment = new WorkFile(env, name, using, imports.flatMap(env.find[Environment](_)))
       identities.foreach{
         case (key, ide) =>
           try {

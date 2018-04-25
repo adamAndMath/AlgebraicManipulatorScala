@@ -7,9 +7,7 @@ case class Substitute(positions: Tree, path: List[String], from: Int, to: Int, s
   override def dependencies: Set[String] = Set(path.head)
 
   override def replace(env: Environment, exp: Exp): Exp = {
-    val e = env.find(path)
-
-    val (identity, headMatch) = e.asInstanceOf[Substitutable].substitute(specifiers)
+    val (identity, headMatch) = env.find[Substitutable](path).get.substitute(specifiers)
 
     val fromExp = identity(from)
 

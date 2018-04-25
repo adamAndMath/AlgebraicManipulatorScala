@@ -6,8 +6,8 @@ case class Wrap(wrapper: Exp, positions: Tree) extends PathManipulation(position
   override def dependencies: Set[String] = wrapper.dependencies
 
   override def replace(env: Environment, exp: Exp): Exp = wrapper match {
-    case Operation(Variable(name), _) => env.find(List(name)).asInstanceOf[Wrapable].wrap(wrapper, exp)
-    case Variable(name) => env.find(List(name)).asInstanceOf[Wrapable].wrap(wrapper, exp)
+    case Operation(Variable(name), _) => env.find[Wrapable](List(name)).get.wrap(wrapper, exp)
+    case Variable(name) => env.find[Wrapable](List(name)).get.wrap(wrapper, exp)
     case Lambda(params, value) =>
       try {
         val re = value.matchExp(exp, HeadMatch(Map.empty, Map.empty, params.map(v => Definition(AnyType, v) -> None).toMap))

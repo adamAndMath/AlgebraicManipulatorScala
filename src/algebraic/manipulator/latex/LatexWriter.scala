@@ -168,7 +168,7 @@ object LatexWriter {
   def getInputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, from, _, _) =>
-      val identity = env.find(path).asInstanceOf[Identity]
+      val identity = env.find[Substitutable](path).get.asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(from).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
     case Rename(positions, _, _) => positions :> colors.head
@@ -179,7 +179,7 @@ object LatexWriter {
   def getOutputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, _, to, _) =>
-      val identity = env.find(path).asInstanceOf[Identity]
+      val identity = env.find[Substitutable](path).get.asInstanceOf[Identity]
       val parameters = identity.header.parameters.map(_.variable)
       positions :: identity.result(to).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
     case Rename(positions, _, _) => positions :> colors.head
@@ -190,12 +190,12 @@ object LatexWriter {
   def writeManipulation(env: Environment, manipulation: Manipulation): String = manipulation match {
     case Call(temp, exp) => s"Call $$${writeExp(exp, exp.tree.filter(_ == temp).map(_ => colors.head))}$$"
     case Substitute(_, path, from, to, _) =>
-      val identity = env.find(path).asInstanceOf[Identity]
-      writeIdentityReference(env.toFull(path), identity.header, List(from, to).map(identity.result))
+      val identity = env.find[Substitutable](path).get.asInstanceOf[Identity]
+      writeIdentityReference(env.toFull[Substitutable](path).get, identity.header, List(from, to).map(identity.result))
     case Rename(_, from, to) => s"Renaming $from to $to"
-    case Wrap(Variable(name), _) => env.find(List(name)) match {
-      case SimpleObject(exp) => writeIdentityReference(env.toFull(List(name)), Header(Nil, Nil, Nil), List(Variable(name), exp))
-      case SimpleFunction(header, exp) => writeIdentityReference(env.toFull(List(name)), header, List(Operation(Variable(name), header.parameters.map(_.variable)), exp))
+    case Wrap(Variable(name), _) => env.find[Wrapable](List(name)).head match {
+      case SimpleObject(exp) => writeIdentityReference(env.toFull[Wrapable](List(name)).get, Header(Nil, Nil, Nil), List(Variable(name), exp))
+      case SimpleFunction(header, exp) => writeIdentityReference(env.toFull[Wrapable](List(name)).get, header, List(Operation(Variable(name), header.parameters.map(_.variable)), exp))
     }
     case Wrap(Lambda(params, e), _) =>
       s"Wrapping $$${params.map(writeExp(_)).mkString("(", ", ", ")")} \\rightarrow ${writeExp(e)}$$"

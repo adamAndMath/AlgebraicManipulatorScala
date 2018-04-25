@@ -7,16 +7,17 @@ class WorkFile(parent: Environment, name: String, val using: Map[String, List[St
   override def dependencies: Set[String] =
     imports.map(_.path).map(p => p.drop((p zip path).takeWhile(e => e._1==e._2).length).head) ++ using.values.map(_.head)
 
-  override def find(path: List[String]): Element =
-    using.get(path.head).map(parent.find).map(e => {
-      if (path.tail.nonEmpty) {
-        e match {
-          case env: Environment => env(path.tail)
-          case _ => e
-        }
-      } else e
-    }).getOrElse(imports.find(_.contains(path.head)).map(_(path)).getOrElse(parent.find(path)))
+  override def find[E <: Element](path: List[String], predicate: E => Boolean): Option[E] =
+    using.get(path.head).flatMap(parent.find[Element](_)).flatMap{
+      case env: Environment if path.tail.nonEmpty => env(path.tail, predicate)
+      case e => Some(e).filter(_.isInstanceOf[E]).map(_.asInstanceOf[E]).filter(predicate)
+    }.orElse((Option.empty[E] /: imports)(_ orElse _(path, predicate)))
+      .orElse(parent.find(path, predicate))
 
-  override def toFull(path: List[String]): List[String] =
-    using.get(path.head).map(_ ++ path.tail).getOrElse(imports.find(_.contains(path.head)).map(_.path ++ path).getOrElse(parent.toFull(path)))
+  override def toFull[E <: Element](path: List[String], predicate: E => Boolean): Option[List[String]] =
+    using.get(path.head).flatMap(parent.find[Element](_)).flatMap{
+      case env: Environment if path.tail.nonEmpty => env(path.tail, predicate).map(_ => env.path ++ path.tail)
+      case e => Some(e).filter(_.isInstanceOf[E]).map(_.asInstanceOf[E]).filter(predicate).flatMap(_ => parent.toFull(using(path.head)))
+    }.orElse(imports.find(i => i.contains(path.head) && i(path, predicate).isDefined).map(_.path ++ path))
+      .orElse(parent.toFull(path, predicate))
 }
