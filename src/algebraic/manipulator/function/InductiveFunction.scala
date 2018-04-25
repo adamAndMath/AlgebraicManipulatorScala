@@ -7,9 +7,6 @@ import algebraic.manipulator.specifiers.{HeadMatch, Header, TypeHeader}
 case class InductiveFunction(header: Header, base: InductiveBase, steps: List[InductiveStep]) extends FunctionElement with Wrapable {
   override def typeHeader: TypeHeader = header.toType
 
-  override def dependencies: Set[String] =
-    header.scope((base :: steps).flatMap(_.dependencies).toSet)
-
   override def validate(env: Environment): Traversable[(List[String], String)] = None
 
   override def wrap(template: Exp, exp: Exp): Exp = template match {

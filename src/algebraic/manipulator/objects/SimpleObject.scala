@@ -4,8 +4,6 @@ import algebraic.manipulator.manipulation.Wrapable
 import algebraic.manipulator.{Environment, Exp, Variable}
 
 case class SimpleObject(value: Exp) extends ObjectElement with Wrapable {
-  override def dependencies: Set[String] = value.dependencies
-
   override def validate(env: Environment): Traversable[(List[String], String)] = None
 
   override def wrap(template: Exp, exp: Exp): Exp = template match {

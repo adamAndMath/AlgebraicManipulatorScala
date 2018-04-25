@@ -4,7 +4,6 @@ trait Environment extends Element {
   val path: List[String]
   val base: Environment = this
   val names: Set[String] = Set.empty
-  val bound: Set[String] = Set.empty
   def apply[E <: Element](name: String, predicate: E => Boolean = (_:E) => true): Option[E] = None
   def contains(name: String): Boolean = names.contains(name)
   def find[E <: Element](path: List[String], predicate: E => Boolean = (_:E) => true): Option[E]
@@ -31,21 +30,18 @@ object Environment {
     override val path: List[String] = Nil
     override def find[E <: Element](path: List[String], predicate: E => Boolean): Option[E] = None
     override def toFull[E <: Element](path: List[String], predicate: E => Boolean): Option[List[String]] = None
-    override def dependencies: Set[String] = Set.empty
   }
 
   case class Scope(parent: Environment, name: String) extends Environment {
     override val path: List[String] = parent.path :+ name
     override def find[E <: Element](path: List[String], predicate: E => Boolean): Option[E] = parent.find(path, predicate)
     override def toFull[E <: Element](path: List[String], predicate: E => Boolean): Option[List[String]] = parent.toFull(path, predicate)
-    override def dependencies: Set[String] = Set.empty
   }
 
   case class Compound(env: Environment, key: String, element: Element) extends Environment {
     override val path: List[String] = env.path
     override val base: Environment = env.base
     override val names: Set[String] = env.names + key
-    override val bound: Set[String] = env.bound + key
 
     override def apply[E <: Element](name: String, predicate: E => Boolean): Option[E] =
       Some(element).filter(e => name == key && e.isInstanceOf[E]).map(_.asInstanceOf[E])
@@ -64,8 +60,6 @@ object Environment {
         case e: Environment => env.filter(predicate) ++ e.filter(predicate)
         case _ => env.filter(predicate)
       }
-
-    override def dependencies: Set[String] = env.dependencies ++ (element.dependencies -- env.bound)
 
     override def validate(env: Environment): Traversable[(List[String], String)] =
       this.env.validate(env) ++ element.validate(this)

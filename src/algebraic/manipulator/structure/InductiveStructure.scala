@@ -4,9 +4,6 @@ import algebraic.manipulator._
 import algebraic.manipulator.specifiers.Header
 
 case class InductiveStructure(header: Header, base: InductiveBase, steps: List[InductiveStep]) extends Structure {
-  override def dependencies: Set[String] =
-    header.scope((base :: steps).flatMap(_.dependencies).toSet)
-
   override def validate(env: Environment): Traversable[(List[String], String)] = None
 }
 

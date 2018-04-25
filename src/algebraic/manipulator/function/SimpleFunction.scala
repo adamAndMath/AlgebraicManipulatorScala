@@ -9,9 +9,6 @@ case class SimpleFunction(header: Header, value: Exp) extends FunctionElement wi
 
   override def typeHeader: TypeHeader = header.toType
 
-  override def dependencies: Set[String] =
-    header.scope(value.dependencies)
-
   override def validate(env: Environment): Traversable[(List[String], String)] = None
 
   override def wrap(template: Exp, exp: Exp): Exp = template match {

@@ -15,9 +15,6 @@ abstract class Identity(val header: Header, val result: List[Exp]) extends Eleme
 
 class Assumption(header: Header, result: List[Exp]) extends Identity(header, result) {
   override def validate(env: Environment): Traversable[(List[String], String)] = None
-
-  override def dependencies: Set[String] =
-    header.scope(result.flatMap(_.dependencies).toSet)
 }
 
 class Proof(header: Header, result: List[Exp], val count: Int, val origin: Exp) extends Identity(header, result) {
@@ -30,9 +27,6 @@ class Proof(header: Header, result: List[Exp], val count: Int, val origin: Exp) 
   override def validate(env: Environment): Traversable[(List[String], String)] =
     Some(Nil -> s"The current state ${cur.mkString("=")} isn't equal to the expected result ${result.mkString("=")}")
       .filter(_ => (cur zip result).exists(p => p._1 != p._2))
-
-  override def dependencies: Set[String] =
-    header.scopeWithDummies((origin :: result ++ manips).flatMap(_.dependencies).toSet)
 
   def apply(env: Environment, manipulation: Manipulation): Unit = {
     cur = manipulation(env, cur)
@@ -55,9 +49,6 @@ class AssumedProof(header: Header, result: List[Exp], val origin: List[Exp]) ext
   override def validate(env: Environment): Traversable[(List[String], String)] =
     Some(Nil -> s"The current state ${cur.mkString("=")} isn't equal to the expected result ${result.mkString("=")}")
       .filter(_ => (cur zip result).exists(p => p._1 != p._2))
-
-  override def dependencies: Set[String] =
-    header.scope((origin ++ result ++ manips).flatMap(_.dependencies).toSet)
 
   def apply(env: Environment, manipulation: Manipulation): Unit = {
     cur = manipulation(env, cur)
@@ -91,19 +82,13 @@ class InductionProof(header: Header, result: List[Exp], val inductives: Map[Vari
   override def validate(env: Environment): Traversable[(List[String], String)] =
     base.validate(env).map{case (p,v) => ("base"::p) -> v} ++
       steps.flatMap{case (k, step) => step.flatMap(s => s.proof.validate(env).map{case (p,v) => (s"$k -> ${s.exp}"::p) -> v})}
-
-  override def dependencies: Set[String] =
-    header.scopeWithDummies((base :: origin :: result ++ inductives.values ++ steps.values.flatten).flatMap(_.dependencies).toSet)
 }
 
-sealed abstract class InductiveStep(header: Header, result: List[Exp], val inductives: Map[Variable, Exp], v: Variable, val params: List[Definition], val exp: Exp) extends Depending {
+sealed abstract class InductiveStep(header: Header, result: List[Exp], val inductives: Map[Variable, Exp], v: Variable, val params: List[Definition], val exp: Exp) {
   val proof: Identity
 
   def bindStep(env: Environment): Environment =
     env + ("step" -> new Assumption(header.mapPars(_.filterNot(d => inductives.contains(d.variable))), result))
-
-  override def dependencies: Set[String] =
-    Header(Nil, Nil, params).scope(proof.dependencies - "step" ++ exp.dependencies)
 }
 
 class InductiveAssumedStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp)
@@ -116,6 +101,4 @@ class InductiveProofStep(header: Header, result: List[Exp], inductives: Map[Vari
   extends InductiveStep(header: Header, result: List[Exp], inductives: Map[Variable, Exp], v: Variable, params: List[Definition], exp: Exp) {
   override val proof: Proof =
     new Proof(header.mapPars(_ ++ params), result.map(_.set(v -> exp)), count, origin)
-
-  override def dependencies: Set[String] = super.dependencies ++ Header(Nil, Nil, params).scope(origin.dependencies)
 }
