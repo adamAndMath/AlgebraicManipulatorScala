@@ -6,8 +6,8 @@ case class Unwrap(positions: Tree) extends PathManipulation(positions) {
   override def dependencies: Set[String] = Set.empty
 
   override def replace(env: Environment, exp: Exp): Exp = exp match {
-    case Variable(name) => env.find[Wrapable](List(name)).get.unwrap(exp)
-    case Operation(Variable(name), _) => env.find[Wrapable](List(name)).get.unwrap(exp)
+    case Variable(name) => env.find(List(name), _.isInstanceOf[Wrapable]).get.asInstanceOf[Wrapable].unwrap(exp)
+    case Operation(Variable(name), _) => env.find(List(name), _.isInstanceOf[Wrapable]).get.asInstanceOf[Wrapable].unwrap(exp)
     case Operation(Lambda(params, value), args) =>
       if (params.length != args.length)
         throw new IllegalArgumentException(s"Expected ${params.length} arguments, but received ${args.length}")

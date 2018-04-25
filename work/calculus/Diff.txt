@@ -169,7 +169,7 @@ prove ide Line<x>(Complex x) {
 	diff(x -> x)(x) = 1
 }
 
-prove ide DiffLn(Complex x) {
+prove ide Ln(Complex x) {
 	let 2 diff(ln)(x)
     substitute Definition<h>:1
 	substitute ~Ln.DistributeSub:1,1,0,0;
@@ -194,13 +194,13 @@ prove ide DiffLn(Complex x) {
 	diff(ln)(x) = div(1,x)
 }
 
-prove ide DiffLog<x>(Complex a, Complex x) {
+prove ide Log<x>(Complex a, Complex x) {
 	let 2 diff(x -> log(a,x))(x)
 	substitute Ln.ChangeBase:1,-1,0,0;
 	substitute Div.AsMult:1,-1,0,0;
 	substitute Mult.Commute:1,-1,0,0;
 	substitute Factor:1;
-	substitute DiffLn:1,1;
+	substitute Ln:1,1;
 	substitute ~Div.AsMult:1;
 	substitute Div.Commute[0->2]:1;
 } result {
@@ -213,7 +213,7 @@ prove ide Exp<x>(Complex x) {
 	wrap x -> pow(e,x):0,-1,0,0,0
 	substitute Chain:0
 	unwrap:0,0,0
-	substitute DiffLn:0,0
+	substitute Ln:0,0
 	substitute Line:1
 	substitute Mult.Commute:0
 	substitute ~Div.AsMult:0
@@ -244,7 +244,7 @@ prove ide Exponential<x>(Complex a, Complex x) {
 	diff(x -> pow(a,x))(x) = mult(ln(a),pow(a,x))
 }
 
-prove ide DiffPow<x>(Complex n, Complex x) {
+prove ide Pow<x>(Complex n, Complex x) {
 	let 2 diff(x -> pow(x,n))(x)
 	substitute ~Ln.PowLn:1,-1,0,0,0
 	substitute Pow.Combine:1,-1,0,0
@@ -254,7 +254,7 @@ prove ide DiffPow<x>(Complex n, Complex x) {
 	unwrap:1,0,0
 	substitute Mult.Commute:1,1,-1,0,0
 	substitute Factor:1,1
-	substitute DiffLn:1,1,1
+	substitute Ln:1,1,1
 	substitute Exp:1,0
 	substitute ~Mult.Associate:1
 	substitute Mult.Commute:1,0
