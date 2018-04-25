@@ -3,9 +3,7 @@ package algebraic.manipulator
 trait Environment extends Element {
   val path: List[String]
   val base: Environment = this
-  val names: Set[String] = Set.empty
   def apply(name: String, predicate: Element => Boolean): Option[Element] = None
-  def contains(name: String): Boolean = names.contains(name)
   def find(path: List[String], predicate: Element => Boolean): Option[Element]
   def toFull(path: List[String], predicate: Element => Boolean): Option[List[String]]
 
@@ -41,7 +39,6 @@ object Environment {
   case class Compound(env: Environment, key: String, element: Element) extends Environment {
     override val path: List[String] = env.path
     override val base: Environment = env.base
-    override val names: Set[String] = env.names + key
 
     override def apply(name: String, predicate: Element => Boolean): Option[Element] =
       Some(element).filter(e => name == key && predicate(e))
