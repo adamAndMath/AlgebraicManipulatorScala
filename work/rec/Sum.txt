@@ -1,3 +1,4 @@
+import Properties;
 import Numbers;
 import base.Add;
 import base.Sub;
@@ -32,22 +33,22 @@ prove ide SuccRight(Integer -> Complex f, Integer a, Integer b) {
 inductive ide PredLeft(Integer -> Complex f, Integer a, Integer b) {
     base b = a {
         let 2 sum(f,sub(a,1),a)
-        substitute ~Sub.AddSub(-,1):1,2
+        substitute ~InverseRight(add,sub)(-,1):1,2
         substitute SuccRight:1
         substitute Single:1,0
         substitute ~Single:1,1
-        substitute Sub.AddSub:1,1,[1|2]
+        substitute InverseRight:1,1,[1|2]
     } b -> add(b,1) {
         call x add(x,f(add(b,1)))
-        substitute Add.Associate:1
+        substitute Associate:1
         substitute ~SuccRight:[0|1,1]
     } b -> sub(b,1) {
-        substitute ~Sub.AddSub(-,1):[0|1,1],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1,1],2
         substitute SuccRight:[0|1,1]
-        substitute Sub.AddSub:[0|1,1],1,0
-        substitute ~Add.Associate:1
+        substitute InverseRight:[0|1,1],1,0
+        substitute ~Associate:1
         call x sub(x,f(b))
-        substitute Sub.SubAdd:[0|1]
+        substitute InverseRight:[0|1]
     }
 } result {
     sum(f,sub(a,1),b)=add(f(sub(a,1)),sum(f,a,b))
@@ -55,12 +56,12 @@ inductive ide PredLeft(Integer -> Complex f, Integer a, Integer b) {
 
 prove ide Identity(Integer -> Complex f, Integer a) {
     let 2 sum(f,a,sub(a,1))
-    substitute ~Sub.SubAdd(-,f(a)):1
-    substitute ~Sub.AddSub(-,1):1,0,1,0
+    substitute ~InverseRight(sub,add)(-,f(a)):1
+    substitute ~InverseRight(add,sub)(-,1):1,0,1,0
     substitute ~SuccRight:1,0
-    substitute Sub.AddSub:1,0,2
+    substitute InverseRight:1,0,2
     substitute Single:1,0
-    substitute Sub.Inverse:1
+    substitute Matching:1
 } result {
     sum(f,a,sub(a,1))=0
 }
@@ -70,21 +71,21 @@ inductive ide IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer 
         let 2 0
         substitute ~Identity(i -> f(add(i,c)),a):0
         substitute ~Identity(f,add(a,c)):1
-        substitute Sub.Commute2[0->2]:1,2
+        substitute ~OuterCommuteRight:1,2
     } b -> add(b,1) {
         call x add(x,f(add(add(b,c),1)))
-        substitute Add.OuterCommute:0,1,0
+        substitute OuterCommuteRight:0,1,0
         wrap i -> f(add(i,c)):0,1
         substitute ~SuccRight:[0|1]
-        substitute Add.OuterCommute:1,2
+        substitute OuterCommuteRight:1,2
     } b -> sub(b,1) {
-        substitute ~Sub.AddSub(-,1):[0|1],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1],2
         substitute SuccRight:[0|1]
-        substitute Sub.AddSub:[0|1],1,0
+        substitute InverseRight:[0|1],1,0
         unwrap:0,1
         call x sub(x,f(add(b,c)))
-        substitute Sub.SubAdd:[0|1]
-        substitute Sub.Commute2[0->2]:1,2
+        substitute InverseRight:[0|1]
+        substitute ~OuterCommuteRight:1,2
     }
 } result {
     sum(i -> f(add(i,c)),a,b)=sum(f,add(a,c),add(b,c))
@@ -92,10 +93,10 @@ inductive ide IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer 
 
 prove ide IndexShiftSub<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
     let 2 sum(i -> f(sub(i,c)),a,b)
-    substitute ~Sub.AddSub(-,c):1,[1|2]
+    substitute ~InverseRight(add,sub)(-,c):1,[1|2]
     substitute ~IndexShift<i>:1
     unwrap:1,0,0
-    substitute Sub.SubAdd:1,0,0,0
+    substitute InverseRight:1,0,0,0
     unwrap:1,0
 } result {
     sum(i -> f(sub(i,c)),a,b)=sum(f,sub(a,c),sub(b,c))
@@ -105,31 +106,31 @@ inductive ide Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
     base b=a {
         let 2 sum(f,a,a)
         substitute Single:1
-        substitute Sub.Negate:1,0
+        substitute ~NegateLeft(sub,-):1,0
         wrap i -> f(sub(0,i)):1
         substitute ~Single:1
     } b -> add(b,1) {
         call x add(x,f(add(b,1)))
-        substitute Add.Commute:1
+        substitute Commute:1
         substitute ~SuccRight:0
-        substitute Sub.Negate:1,0,0,0;
-        substitute Sub.Commute2[2->3]:1,0,0
+        substitute ~NegateLeft(sub,-):1,0,0,0;
+        substitute AssociateMut:1,0,0
         wrap i -> f(sub(0,i)):1,0
         substitute ~PredLeft:1
-        substitute Sub.Commute[0->2]:1,1
+        substitute AssociateMut:1,1
     } b -> sub(b,1){
-        substitute ~Sub.AddSub(-,1):0,2
+        substitute ~InverseRight(add,sub)(-,1):0,2
         substitute SuccRight:0;
-        substitute ~Sub.SubAdd(-,1):1,1
+        substitute ~InverseRight(sub,add)(-,1):1,1
         substitute PredLeft:1
         unwrap:1,0
-        substitute Add.Commute:1;
-        substitute Sub.AddSub:0,1,0
-        substitute Sub.SubAdd:1,1,0,1
-        substitute ~Sub.Negate(b):1,1,0;
-        substitute Sub.Commute2[2->3]:1,0,1;
+        substitute Commute:1;
+        substitute InverseRight:0,1,0
+        substitute InverseRight:1,1,0,1
+        substitute NegateLeft:1,1,0;
+        substitute AssociateMut:1,0,1;
         call x sub(x,f(b));
-        substitute Sub.SubAdd:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     sum(f,a,b)=sum(i -> f(sub(0,i)),sub(0,b),sub(0,a))
@@ -138,14 +139,15 @@ inductive ide Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
 prove ide FixedReverse<i>(Integer -> Complex f, Integer a, Integer b) {
     let 2 sum(f,a,b)
     substitute Reverse<i>:1
-    substitute ~Sub.Inverse(a):1,1,0
-    substitute ~Sub.Inverse(b):1,2,0
-    substitute Sub.Commute[0->2]:1,[1|2]
-    substitute Add.Commute:1,2,1
+    substitute ~Matching(sub,-)(a):1,1,0
+    substitute ~Matching(sub,-)(b):1,2,0
+    substitute AssociateMut:1,[1|2]
+    substitute Commute:1,2,1
     substitute ~IndexShiftSub<i>:1
     unwrap:1,0,0
-    substitute Sub.Commute2[3->0]:1,0,0,0
-    substitute Add.IdentityLeft:1,0,0,0,0
+    substitute ~AssociateMut:1,0,0,0
+    substitute OuterCommuteRight:1,0,0,0
+    substitute IdentityLeft:1,0,0,0,0
 } result {
     sum(f,a,b)=sum(i -> f(sub(add(a,b),i)),a,b)
 }
@@ -153,20 +155,20 @@ prove ide FixedReverse<i>(Integer -> Complex f, Integer a, Integer b) {
 inductive ide RangeSplit(Integer -> Complex f, Integer a, Integer b, Integer c) {
     base c=b {
         let 2 sum(f,a,b);
-        substitute ~Add.IdentityRight:1;
+        substitute ~IdentityRight(add,-):1;
         substitute ~Identity(f,add(b,1)):1,1;
-        substitute Sub.SubAdd:1,1,2;
+        substitute InverseRight:1,1,2;
     } c -> add(c,1) {
         call x add(x,f(add(c,1)));
-        substitute Add.Associate:1;
+        substitute Associate:1;
         substitute ~SuccRight:[0|1,1];
     } c -> sub(c,1){
-        substitute ~Sub.AddSub(-,1):[0|1,1],2;
+        substitute ~InverseRight(add,sub)(-,1):[0|1,1],2;
         substitute SuccRight:[0|1,1];
-        substitute Sub.AddSub:[0|1,1],1,0;
-        substitute ~Add.Associate:1;
+        substitute InverseRight:[0|1,1],1,0;
+        substitute ~Associate:1;
         call x sub(x,f(c));
-        substitute Sub.SubAdd:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     sum(f,a,c)=add(sum(f,a,b),sum(f,add(b,1),c))
@@ -180,17 +182,17 @@ inductive ide Factor<i>(Integer -> Complex f, Complex c, Integer a, Integer b) {
         substitute ~Single:0,1
     } b -> add(b,1) {
         call x add(x,mult(c,f(add(b,1))))
-        substitute ~Mult.Distribute:0
+        substitute ~DistributeLeft:0
         wrap i -> mult(c,f(i)):1,1
         substitute ~SuccRight:[0,1|1]
     } b -> sub(b,1) {
-        substitute ~Sub.AddSub(-,1):[0,1|1],2
+        substitute ~InverseRight(add,sub)(-,1):[0,1|1],2
         substitute SuccRight:[0,1|1]
         unwrap:1,1
-        substitute Sub.AddSub:[0|1],1,1,0
-        substitute Mult.Distribute:0
+        substitute InverseRight:[0|1],1,1,0
+        substitute DistributeLeft:0
         call x sub(x,mult(c,f(b)))
-        substitute Sub.SubAdd:[0|1]
+        substitute InverseRight:[0|1]
     }
 } result {
     mult(c,sum(f,a,b))=sum(i -> mult(c,f(i)),a,b)
@@ -204,24 +206,24 @@ inductive ide Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer 
     } b -> add(b,1) {
         call x add(x,add(f(add(b,1)),g(add(b,1))))
 
-        substitute ~Add.Associate:1
-        substitute Add.OuterCommute:1,0
-        substitute Add.Associate:1
+        substitute ~Associate:1
+        substitute OuterCommuteRight:1,0
+        substitute Associate:1
 
         wrap i -> add(f(i),g(i)):0,1
         substitute ~SuccRight:[0|1,[0|1]]
     } b -> sub(b,1){
-        substitute ~Sub.AddSub(-,1):[0|1,[0|1]],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1,[0|1]],2
         substitute SuccRight:[0|1,[0|1]]
         unwrap:0,1
-        substitute Sub.AddSub:[0,1,[0|1]|1,[0|1],1],0;
+        substitute InverseRight:[0,1,[0|1]|1,[0|1],1],0;
 
-        substitute ~Add.Associate:1;
-        substitute Add.OuterCommute:1,0
-        substitute Add.Associate:1;
+        substitute ~Associate:1;
+        substitute OuterCommuteRight:1,0
+        substitute Associate:1;
 
         call x sub(x,add(f(b),g(b)));
-        substitute Sub.SubAdd:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     sum(i -> add(f(i),g(i)),a,b)=add(sum(f,a,b),sum(g,a,b))
@@ -229,10 +231,10 @@ inductive ide Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer 
 
 prove ide DistributeSub<i>(Integer -> Complex f, Integer -> Complex g, Integer a, Integer b) {
     let 2 sum(i -> sub(f(i),g(i)),a,b)
-    substitute ~Sub.SubAdd(-,sum(g,a,b)):1
+    substitute ~InverseRight(sub,add)(-,sum(g,a,b)):1
     substitute ~Distribute<i>:1,0
     unwrap:1,0,0,0,0
-    substitute Sub.AddSub:1,0,0,0
+    substitute InverseRight:1,0,0,0
     unwrap:1,0,0
 } result {
     sum(i -> sub(f(i),g(i)),a,b)=sub(sum(f,a,b),sum(g,a,b))
@@ -252,15 +254,15 @@ inductive ide Commute<i,j>((Integer,Integer) -> Complex f, Integer a1, Integer b
         wrap i -> f(i,j):1,0,0,1
         substitute ~SuccRight:[0|1,0,0]
     } b1 -> sub(b1,1){
-        substitute ~Sub.AddSub(-,1):[0|1,0,0],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1,0,0],2
         substitute SuccRight:[0|1,0,0];
-        substitute Sub.AddSub:[0|1,0,0],1,0
+        substitute InverseRight:[0|1,0,0],1,0
         unwrap:[0|1,0,0],1
         wrap j -> sum(i -> f(i,j),a1,sub(b1,1)):1,0,0,0
         wrap j -> f(b1,j):1,0,0,1
         substitute Distribute:1;
         call x sub(x,sum(j -> f(b1,j),a2,b2));
-        substitute Sub.SubAdd:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     sum(i -> sum(j -> f(i,j),a2,b2),a1,b1)=sum(j -> sum(i -> f(i,j),a1,b1),a2,b2)
@@ -280,7 +282,7 @@ inductive ide TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, In
         wrap i -> sum(j -> f(i,j),a,i):0,1
         substitute ~SuccRight:0
         substitute SuccRight:1,1
-        substitute ~Add.Associate:1
+        substitute ~Associate:1
         substitute ~Distribute<j>:1,0
         unwrap:1,[0,0,0,[0|1]|1]
         wrap i -> f(i,j):1,0,0,0,1
@@ -290,22 +292,22 @@ inductive ide TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, In
         wrap j -> sum(i -> f(i,j),j,add(n,1)):1,1
         substitute ~SuccRight:1;
     } n -> sub(n,1){
-        substitute ~Sub.AddSub(-,1):[0|1,0,0],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1,0,0],2
         substitute SuccRight:[0|1,0,0]
-        substitute Sub.AddSub:[0|1,0,0],1,0
+        substitute InverseRight:[0|1,0,0],1,0
         unwrap:[0|1,0,0],1
         wrap j -> sum(i -> f(i,j),j,sub(n,1)):1,0,0,0
         wrap j -> f(n,j):1,0,0,1
         substitute Distribute:1;
-        substitute ~Sub.AddSub(-,1):1,0,2
+        substitute ~InverseRight(add,sub)(-,1):1,0,2
         substitute SuccRight:1,0;
-        substitute Sub.AddSub:1,0,1,0
+        substitute InverseRight:1,0,1,0
         unwrap:1,0,1
         substitute Identity:1,0,1;
-        substitute Add.IdentityRight:1,0;
+        substitute IdentityRight:1,0;
 
         call x sub(x,sum(j -> f(n,j),a,n));
-        substitute Sub.SubAdd:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     sum(i -> sum(j -> f(i,j),a,i),a,n)=sum(j -> sum(i -> f(i,j),j,n),a,n)
@@ -319,18 +321,18 @@ inductive ide TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, In
         substitute Mult.DistributeSub:1,1,0
         substitute Mult.Singularity[2->0]:1,1,0,0
         substitute Mult.IdentityRight:1,1,0,1
-        substitute ~Add.Commute:1,1
+        substitute ~Commute:1,1
         substitute ~Sub.AsAdd:1,1
-        substitute Sub.Inverse:1,1
+        substitute Matching:1,1
     } n -> add(n,1) {
         call x add(x,sum(f,add(mult(z,n),z),sub(add(mult(z,add(n,1)),z),1)))
         wrap i -> f(i):0,1,0
-        substitute ~Sub.SubAdd(-,add(mult(z,n),z)):0,1,0,0,0
+        substitute ~InverseRight(sub,add)(-,add(mult(z,n),z)):0,1,0,0,0
         wrap j -> sub(j,add(mult(z,n),z)):0,1,0,0
-        substitute ~Add.IdentityLeft:0,1,1
+        substitute ~IdentityLeft:0,1,1
         substitute ~Mult.DistributeSub:0,1,2,0
         substitute ~Mult.IdentityRight:0,1,2,0,1
-        substitute Sub.Commute2[0->1]:0,1,2
+        substitute AssociateMut:0,1,2
         substitute ~IndexShift:0,1
     }
 } result {

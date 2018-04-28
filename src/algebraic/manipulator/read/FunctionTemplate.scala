@@ -7,7 +7,7 @@ import algebraic.manipulator.read.Tokens._
 import algebraic.manipulator.specifiers.{Header, TypeHeader}
 
 trait FunctionTemplate extends ElementTemplate {
-  override def apply(env: Environment): FunctionElement
+  override def apply(name: String, env: Environment): FunctionElement
 }
 
 object FunctionTemplate {
@@ -56,20 +56,20 @@ object FunctionTemplate {
   }
 
   case class AssumedFunctionTemplate(header: TypeHeader) extends FunctionTemplate {
-    override def apply(env: Environment): FunctionElement = AssumedFunction(header)
+    override def apply(name: String, env: Environment): FunctionElement = AssumedFunction(header)
 
     override def dependencies: Set[String] = header.dependencies
   }
 
   case class SimpleFunctionTemplate(header: Header, exp: Exp) extends FunctionTemplate {
-    override def apply(env: Environment): FunctionElement = SimpleFunction(header, exp)
+    override def apply(name: String, env: Environment): FunctionElement = SimpleFunction(header, exp)
 
     override def dependencies: Set[String] =
       header.scope(exp.dependencies)
   }
 
   case class InductiveFunctionTemplate(header: Header, base: InductiveBase, steps: List[InductiveStep]) extends FunctionTemplate {
-    override def apply(env: Environment): FunctionElement = InductiveFunction(header, base, steps)
+    override def apply(name: String, env: Environment): FunctionElement = InductiveFunction(header, base, steps)
 
     override def dependencies: Set[String] =
       header.scope((base :: steps).flatMap(_.dependencies).toSet)

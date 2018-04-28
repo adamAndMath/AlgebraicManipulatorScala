@@ -22,7 +22,8 @@ object ProofReader {
     ("ide" -> IdentityTemplate.readers) +
     ("struct" -> StructureTemplate.readers) +
     ("object" -> ObjectTemplate.readers) +
-    ("fn" -> FunctionTemplate.readers)
+    ("fn" -> FunctionTemplate.readers) +
+    ("prop" -> PropertyTemplate.readers)
 
   def readTree(tokens: Tokens): Read[Tree] = {
     val (tree, t1) = {

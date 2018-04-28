@@ -1,38 +1,44 @@
-/*
-prop Commute[T]((T,T)->T f)
+define prop Commute[T]((T,T)->T f)
     => (T a, T b) f(a,b)=f(b,a)
-prop OuterCommuteRight[T,U]((T,U)->T f, (T,U)->T g)
+define prop OuterCommuteRight[T,U]((T,U)->T f, (T,U)->T g)
     => (T a, U b, U c) f(g(a,b),c)=g(f(a,c),b)
-prop OuterCommuteLeft[T,U]((U,T)->T f, (U,T)->T)
+define prop OuterCommuteLeft[T,U]((U,T)->T f, (U,T)->T g)
     => (U a, U b, T c) f(a,g(b,c))=g(b,f(a,c))
-prop Associate[T]((T,T)->T f)
+define prop Associate[T]((T,T)->T f)
     => (T a, T b, T c) f(f(a,b),c)=f(a,f(b,c))
-prop AssociateMut[A,B,C,R,T,U]((T,C)->R f, (A,B)->T g, (A,U)->R h, (B,C)->U i)
+define prop AssociateMut[A,B,C,R,T,U]((T,C)->R f, (A,B)->T g, (A,U)->R h, (B,C)->U i)
     => (A a, B b, C c) f(g(a,b),c)=h(a,i(b,c))
-prop DistributeRight[T,U]((T,U)->T f, (T,T)->T g)
+define prop DistributeRight[T,U]((T,U)->T f, (T,T)->T g)
     => (T a, T b, U c) f(g(a,b),c)=g(f(a,c),f(b,c))
-prop DistributeLeft[T,U]((U,T)->T f, (T,T)->T g)
+define prop DistributeLeft[T,U]((U,T)->T f, (T,T)->T g)
     => (T a, T b, U c) f(c,g(a,b))=g(f(c,a),f(c,b))
-prop IdentityRight[T,U]((T,U)->T f, U i)
+define prop DistributeMutRight[T,U]((T,U)->T f, (T,T)->T g, (T,T)->T h)
+    => (T a, T b, U c) f(g(a,b),c)=h(f(a,c),f(b,c))
+define prop DistributeMutLeft[T,U]((U,T)->T f, (T,T)->T g, (T,T)->T h)
+    => (T a, T b, U c) f(c,g(a,b))=h(f(c,a),f(c,b))
+define prop IdentityRight[T,U]((T,U)->T f, U i)
     => (T a) f(a,i)=a
-prop IdentityLeft[T,U]((U,T)->T f, U i)
+define prop IdentityLeft[T,U]((U,T)->T f, U i)
     => (T a) f(i,a)=a
-prop AnnihilatorRight[T,U]((T,U)->T f, U o)
+define prop AnnihilatorRight[T,U]((T,U)->T f, U o)
     => (T a) f(a,o)=o
-prop AnnihilatorLeft[T,U]((U,T)->T f, U o)
+define prop AnnihilatorLeft[T,U]((U,T)->T f, U o)
     => (T a) f(o,a)=o
-prop InverseRight[T,U,R]((R,U)->T f, (T,U)->R g)
+define prop SingularityRight[T,U,R]((T,U)->R f, U s, R o)
+    => (T a) f(a,s)=o
+define prop SingularityLeft[T,U,R]((U,T)->R f, U s, R o)
+    => (T a) f(s,a)=o
+define prop InverseRight[T,U,R]((R,U)->T f, (T,U)->R g)
     => (T a, U b) f(g(a,b),b)=a
-prop InverseLeft[T,U,R]((U,R)->T f, (U,T)->R g)
+define prop InverseLeft[T,U,R]((U,R)->T f, (U,T)->R g)
     => (U a, T b) f(a,g(a,b))=b
-prop Matching[T,U]((T,T)->U f, U o)
+define prop Matching[T,U]((T,T)->U f, U o)
     => (T a) f(a,a)=o
-prop NegateRight[T,U]((T,U)->T f, U o)
-    => (T a) f(f(a,o),o)
-prop NegateLeft[T,U]((U,T)->T f, U o)
-    => (T a) f(o,f(o,a))
-prop AsRight[T,U,R]((T,U)->R f, (T,R)->R g, T o)
+define prop NegateRight[T,U]((T,U)->T f, U o)
+    => (T a) f(f(a,o),o)=a
+define prop NegateLeft[T,U]((U,T)->T f, U o)
+    => (T a) f(o,f(o,a))=a
+define prop AsRight[T,U,R]((T,U)->R f, (T,R)->R g, T o)
     => (T a, U b) f(a,b)=g(a,f(o,b))
-prop AsRight[T,U,R,S]((U,T)->R f, (R,T)->R g, U o)
+define prop AsLeft[T,U,R,S]((U,T)->R f, (R,T)->R g, U o)
     => (U a, T b) f(a,b)=g(f(a,o),b)
-*/

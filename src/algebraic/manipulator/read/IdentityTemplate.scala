@@ -7,7 +7,7 @@ import algebraic.manipulator.read.Tokens._
 import algebraic.manipulator.specifiers.Header
 
 trait IdentityTemplate extends ElementTemplate {
-  override def apply(env: Environment): Identity
+  override def apply(name: String, env: Environment): Identity
 }
 
 object IdentityTemplate {
@@ -84,14 +84,14 @@ object IdentityTemplate {
   }
 
   case class AssumptionTemplate(header: Header, result: List[Exp]) extends IdentityTemplate {
-    override def apply(env: Environment): Assumption = new Assumption(header, result)
+    override def apply(name: String, env: Environment): Assumption = new Assumption(header, result)
 
     override def dependencies: Set[String] =
       header.scope(result.flatMap(_.dependencies).toSet)
   }
 
   case class ProofTemplate(header: Header, result: List[Exp], count: Int, origin: Exp, manipulations: List[Manipulation]) extends IdentityTemplate {
-    override def apply(env: Environment): Proof = {
+    override def apply(name: String, env: Environment): Proof = {
       val proof = new Proof(header, result, count, origin)
       (manipulations.indices zip manipulations).foreach { case (i, m) =>
         try {
@@ -108,7 +108,7 @@ object IdentityTemplate {
   }
 
   case class InductionProofTemplate(header: Header, result: List[Exp], base: InductiveBaseTemplate, steps: List[InductiveStepTemplate]) extends IdentityTemplate {
-    override def apply(env: Environment): InductionProof = {
+    override def apply(name: String, env: Environment): InductionProof = {
       val proof = new InductionProof(header, result, base.inductives, base.count, base.origin)
       (base.manipulations.indices zip base.manipulations).foreach { case (i, m) =>
         try {

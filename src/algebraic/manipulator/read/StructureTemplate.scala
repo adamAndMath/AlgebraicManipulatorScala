@@ -7,7 +7,7 @@ import algebraic.manipulator.specifiers.Header
 import algebraic.manipulator.structure._
 
 trait StructureTemplate extends ElementTemplate {
-  override def apply(env: Environment): Structure
+  override def apply(name: String, env: Environment): Structure
 }
 
 object StructureTemplate {
@@ -41,13 +41,13 @@ object StructureTemplate {
   }
 
   object SimpleStructureTemplate extends StructureTemplate {
-    override def apply(env: Environment): Structure = SimpleStructure
+    override def apply(name: String, env: Environment): Structure = SimpleStructure
 
     override def dependencies: Set[String] = Set.empty
   }
 
   case class InductiveStructureTemplate(header: Header, base: InductiveBase, steps: List[InductiveStep]) extends StructureTemplate {
-    override def apply(env: Environment): Structure = InductiveStructure(header, base, steps)
+    override def apply(name: String, env: Environment): Structure = InductiveStructure(header, base, steps)
 
     override def dependencies: Set[String] = (base :: steps).flatMap(_.dependencies).toSet
   }

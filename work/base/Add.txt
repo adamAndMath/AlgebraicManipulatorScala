@@ -1,29 +1,30 @@
+import Properties
 import Numbers
 
 assume fn add(Complex, Complex)
 
-assume ide Commute(Complex a, Complex b)
-    add(a,b)=add(b,a)
+assume prop Commute(add)
 
-assume ide IdentityRight(Complex a)
-    add(a,0)=a
+assume prop IdentityRight(add,0)
 
-prove ide IdentityLeft(Complex a) {
+prove prop IdentityLeft(add,0)(Complex a) {
     let 2 add(0,a)
     substitute Commute:1
     substitute IdentityRight:1
-} result {
-    add(0,a)=a
 }
 
-assume ide Associate(Complex a, Complex b, Complex c)
-    add(add(a,b),c)=add(a,add(b,c))
+assume prop Associate(add)
 
-prove ide OuterCommute(Complex a, Complex b, Complex c) {
+prove prop OuterCommuteRight(add,add)(Complex a, Complex b, Complex c) {
     let 2 add(add(a,b),c)
     substitute Associate:1
     substitute Commute:1,1
     substitute ~Associate:1
-} result {
-    add(add(a,b),c)=add(add(a,c),b)
+}
+
+prove prop OuterCommuteLeft(add,add)(Complex a, Complex b, Complex c) {
+    let 2 add(a,add(b,c))
+    substitute ~Associate:1
+    substitute Commute:1,0
+    substitute Associate:1
 }

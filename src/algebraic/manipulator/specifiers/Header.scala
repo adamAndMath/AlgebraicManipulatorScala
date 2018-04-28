@@ -25,4 +25,10 @@ case class Header(generics: List[Variable], dummies: List[Variable], parameters:
 
   def toType: TypeHeader = TypeHeader(generics, parameters.map(_.varType))
   def toMatch: HeadMatch = HeadMatch(generics.map(_ -> None).toMap, dummies.map(_ -> None).toMap, parameters.map(_ -> None).toMap)
+
+  def equivalent(other: Header): Boolean = {
+    generics.length == other.generics.length &&
+    dummies.length == other.dummies.length &&
+    parameters.length == other.parameters.length
+  }
 }

@@ -1,76 +1,75 @@
+import Properties
 import Numbers
 import Add
 
 assume fn sub(Complex, Complex)
 
-assume ide AddSub(Complex a, Complex b)
-    add(sub(a,b),b)=a
+assume prop InverseRight(add,sub)
 
-assume ide SubAdd(Complex a, Complex b)
-    sub(add(a,b),b)=a
+assume prop InverseRight(sub,add)
 
-prove ide IdentityRight(Complex a) {
+prove prop IdentityRight(sub,0)(Complex a) {
     let 2 sub(a,0);
-    substitute ~Add.IdentityRight:1,0;
-    substitute SubAdd(-,0):1;
-} result {
-    sub(a,0)=a
+    substitute ~IdentityRight(add,-):1,0;
+    substitute InverseRight(sub,add)(-,0):1;
 }
 
-prove ide Inverse(Complex a) {
+prove prop Matching(sub,0)(Complex a) {
     let 2 0;
-    substitute ~SubAdd(-,a):0;
-    substitute Add.IdentityLeft:0,0;
-} result {
-    sub(a,a)=0
+    substitute ~InverseRight(sub,add)(-,a):0;
+    substitute IdentityLeft:0,0;
 }
 
-prove ide AsAdd(Complex a, Complex b) {
+prove prop AsRight(sub,add,0)(Complex a, Complex b) {
     let 2 sub(a,b);
-    substitute ~Add.IdentityRight:1,0;
-    substitute ~AddSub(-,b):1,0,1;
-    substitute ~Add.Associate:1,0;
-    substitute SubAdd:1;
-} result {
-    sub(a,b)=add(a,sub(0,b))
+    substitute ~IdentityRight(add,-):1,0;
+    substitute ~InverseRight(add,sub)(-,b):1,0,1;
+    substitute ~Associate:1,0;
+    substitute InverseRight:1;
 }
 
-prove ide Commute(Complex a, Complex b, Complex c) {
-    let 3 sub(sub(a,b),c);
-    substitute AsAdd:1;
-    substitute AsAdd:1,0;
-    substitute Add.OuterCommute:1;
-    substitute ~AsAdd:1,0;
-    substitute ~AsAdd:1;
-
-    substitute ~AddSub(-,add(b,c)):2,0,0;
-    substitute Add.Commute:2,0,0,1;
-    substitute ~Add.Associate:2,0,0;
-    substitute SubAdd:2,0;
-    substitute SubAdd:2;
-} result {
-    sub(sub(a,b),c)=sub(sub(a,c),b)=sub(a,add(b,c))
+prove prop OuterCommuteRight(sub,sub) (Complex a, Complex b, Complex c) {
+    let 2 sub(sub(a,b),c)
+    substitute AsRight:1
+    substitute AsRight:1,0
+    substitute OuterCommuteRight:1
+    substitute ~AsRight:1,0
+    substitute ~AsRight:1
 }
 
-prove ide Commute2(Complex a, Complex b, Complex c) {
-    let 4 sub(add(a,b),c);
-    substitute AsAdd:[1|2|3];
-    substitute Add.Associate:1;
-    substitute Add.OuterCommute:[2|3];
-    substitute ~AsAdd:[1,1|2,0|3,0];
-
-    substitute ~AddSub(-,b):3,0,1;
-    substitute Commute[2->0]:3,0;
-    substitute AddSub(-,b):3;
-} result {
-    sub(add(a,b),c)=add(a,sub(b,c))=add(sub(a,c),b)=sub(a,sub(c,b))
+prove prop OuterCommuteRight(add,sub) (Complex a, Complex b, Complex c) {
+    let 2 add(sub(a,b),c)
+    substitute AsRight:1,0
+    substitute OuterCommuteRight:1
+    substitute ~AsRight:1
 }
 
-prove ide Negate(Complex a) {
-    let 2 a;
-    substitute ~SubAdd(-,0):1;
-    substitute Add.Commute:1,0;
-    substitute Commute2[0->3]:1;
-} result {
-    a=sub(0,sub(0,a))
+prove prop AssociateMut(sub,sub,sub,add) (Complex a, Complex b, Complex c) {
+    let 2 sub(sub(a,b),c)
+    substitute ~InverseRight(add,sub)(-,add(b,c)):1,0,0
+    substitute Commute:1,0,0,1
+    substitute ~Associate:1,0,0
+    substitute InverseRight:1,0
+    substitute InverseRight:1
+}
+
+prove prop AssociateMut(sub,add,add,sub) (Complex a, Complex b, Complex c) {
+    let 2 sub(add(a,b),c)
+    substitute AsRight:1
+    substitute Associate:1
+    substitute ~AsRight:1,1
+}
+
+prove prop AssociateMut(add,sub,sub,sub) (Complex a, Complex b, Complex c) {
+    let 2 add(sub(a,b),c)
+    substitute ~InverseRight(add,sub)(-,c):1,0,1
+    substitute ~AssociateMut:1,0
+    substitute InverseRight:1
+}
+
+prove prop NegateLeft(sub,0)(Complex a) {
+    let 2 sub(0,sub(0,a))
+    substitute ~AssociateMut:1
+    substitute Matching:1,0
+    substitute IdentityLeft:1
 }

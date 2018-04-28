@@ -1,8 +1,12 @@
 package algebraic.manipulator.specifiers
 
-import algebraic.manipulator.{Exp, Variable}
+import algebraic.manipulator.{Depending, Exp, Variable}
 
-case class Specifier(generics: Option[List[Option[Variable]]], dummies: Option[List[Option[Variable]]], parameters: Option[List[Option[Exp]]]) {
+case class Specifier(generics: Option[List[Option[Variable]]], dummies: Option[List[Option[Variable]]], parameters: Option[List[Option[Exp]]]) extends Depending {
+  override def dependencies: Set[String] =
+    generics.toSet.flatten.flatten.map(_.name) ++
+      parameters.toSet.flatten.flatten.flatMap(_.dependencies)
+
   def headMatch(header: Header): HeadMatch = {
     val gens = generics.getOrElse(List.fill(header.generics.length)(None))
     val dums = dummies.getOrElse(List.fill(header.dummies.length)(None))
@@ -18,5 +22,14 @@ case class Specifier(generics: Option[List[Option[Variable]]], dummies: Option[L
       throw new IllegalStateException("Parameter count does't match referred work")
 
     HeadMatch(header.generics.zip(gens).toMap, header.dummies.zip(dums).toMap, header.parameters.zip(pars).toMap)
+  }
+
+  def equivalent(other: Specifier): Boolean = {
+    def comp[T](l1: Option[List[Option[T]]], l2: Option[List[Option[T]]]): Boolean =
+      l1.flatMap(a => l2.map(b => a.length == b.length && (a zip b).forall{case (a1,b1) => a1.flatMap(a2 => b1.map(b2 => a2==b2)).getOrElse(true)})).getOrElse(true)
+
+    comp(generics, other.generics) &&
+    comp(dummies, other.dummies) &&
+    comp(parameters, other.parameters)
   }
 }

@@ -1,8 +1,8 @@
 package algebraic.manipulator.manipulation
 
-import algebraic.manipulator.{Element, Exp}
-import algebraic.manipulator.specifiers.{HeadMatch, Specifier}
+import algebraic.manipulator.{Element, Environment, Exp}
+import algebraic.manipulator.specifiers.Specifier
 
 trait Substitutable extends Element {
-  def substitute(specifiers: List[Specifier]): (List[Exp], HeadMatch)
+  def substitute(env: Environment, exp: Exp, specifiers: List[Specifier], from: Int, to: Int): Exp
 }

@@ -6,7 +6,7 @@ import algebraic.manipulator.read.ProofReader.readExp
 import algebraic.manipulator.read.Tokens._
 
 trait ObjectTemplate extends ElementTemplate {
-  override def apply(env: Environment): ObjectElement
+  override def apply(name: String, env: Environment): ObjectElement
 }
 
 object ObjectTemplate {
@@ -22,13 +22,13 @@ object ObjectTemplate {
   }
 
   object AssumedObjectTemplate extends ObjectTemplate {
-    override def apply(env: Environment): ObjectElement = AssumedObject
+    override def apply(name: String, env: Environment): ObjectElement = AssumedObject
 
     override def dependencies: Set[String] = Set.empty
   }
 
   case class SimpleObjectTemplate(exp: Exp) extends ObjectTemplate {
-    override def apply(env: Environment): ObjectElement = SimpleObject(exp)
+    override def apply(name: String, env: Environment): ObjectElement = SimpleObject(exp)
 
     override def dependencies: Set[String] = exp.dependencies
   }

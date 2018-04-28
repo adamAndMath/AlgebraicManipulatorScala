@@ -21,7 +21,7 @@ case class FileTemplate(path: List[String], using: Map[String, List[String]], im
       identities.foreach{
         case (key, ide) =>
           try {
-            file += (key -> ide.apply(file))
+            file += (key -> ide.apply(key, file))
           } catch {
             case e: Exception => throw new IllegalStateException(s"Failed to build $key", e)
           }

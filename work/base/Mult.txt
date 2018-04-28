@@ -1,72 +1,77 @@
+import Properties
 import Numbers
 import Add
 import Sub
 
 assume fn mult(Complex, Complex)
 
-assume ide Commute(Complex a, Complex b)
-    mult(a,b)=mult(b,a);
+assume prop Commute(mult)
 
-assume ide Associate(Complex a, Complex b, Complex c)
-    mult(mult(a,b),c)=mult(a,mult(b,c));
+assume prop Associate(mult)
 
-assume ide IdentityRight(Complex a)
-    mult(a,1)=a
+assume prop IdentityRight(mult,1)
 
-prove ide IdentityLeft(Complex a) {
+prove prop IdentityLeft(mult,1)(Complex a) {
     let 2 mult(1,a)
     substitute Commute:1
     substitute IdentityRight:1
-} result {
-    mult(1,a)=a
 }
 
-assume ide Distribute(Complex f, Complex a, Complex b)
-    mult(f,add(a,b))=add(mult(f,a),mult(f,b));
+assume prop DistributeRight(mult,add)
 
-prove ide DistributeRight(Complex a, Complex b, Complex c) {
-    let 2 mult(add(a,b),c)
+prove prop DistributeLeft(mult,add)(Complex a, Complex b, Complex c) {
+    let 2 mult(c,add(a,b))
     substitute Commute:1
-    substitute Distribute:1
+    substitute DistributeRight:1
     substitute Commute:1,[0|1]
-} result {
-    mult(add(a,b),c)=add(mult(a,c),mult(b,c))
 }
 
-prove ide OuterCommute(Complex a, Complex b, Complex c) {
+prove prop OuterCommuteRight(mult,mult)(Complex a, Complex b, Complex c) {
     let 2 mult(mult(a,b),c)
     substitute Associate:1
     substitute Commute:1,1
     substitute ~Associate:1
-} result {
-    mult(mult(a,b),c)=mult(mult(a,c),b)
 }
 
-prove ide DistributeSub(Complex f, Complex a, Complex b) {
+prove prop OuterCommuteLeft(mult,mult)(Complex a, Complex b, Complex c) {
+    let 2 mult(a,mult(b,c))
+    substitute ~Associate:1
+    substitute Commute:1,0
+    substitute Associate:1
+}
+
+prove prop DistributeRight(mult,sub)(Complex a, Complex b, Complex f) {
+    let 2 sub(mult(a,f),mult(b,f));
+    substitute ~InverseRight(add,sub)(-,b):0,0,0;
+    substitute DistributeRight:0,0;
+    substitute InverseRight(sub,add):0;
+}
+
+prove prop DistributeLeft(mult,sub)(Complex a, Complex b, Complex f) {
     let 2 sub(mult(f,a),mult(f,b));
-    substitute ~Sub.AddSub(-,b):0,0,1;
-    substitute Distribute:0,0;
-    substitute Sub.SubAdd:0;
-} result {
-    mult(f,sub(a,b))=sub(mult(f,a),mult(f,b))
+    substitute ~InverseRight(add,sub)(-,b):0,0,1;
+    substitute DistributeLeft:0,0;
+    substitute InverseRight(sub,add):0;
 }
 
-prove ide Singularity(Complex a) {
-    let 3 0;
-    substitute ~Sub.Inverse(a):[1|2];
-    substitute ~IdentityRight:[1,[0|1]|2,[0|1]];
-    substitute ~DistributeSub:[1|2];
-    substitute Sub.Inverse:[1,1|2,1];
-    substitute Commute:1;
-} result {
-    0=mult(0,a)=mult(a,0)
+prove prop AnnihilatorRight(mult,0)(Complex a) {
+    let 2 mult(a,0)
+    substitute ~Matching(sub,-)(1):1,1
+    substitute DistributeLeft:1
+    substitute Matching:1
+}
+
+prove prop AnnihilatorLeft(mult,0)(Complex a) {
+    let 2 mult(0,a)
+    substitute Commute:1
+    substitute AnnihilatorRight:1
 }
 
 prove ide NegAsMult(Complex a) {
     let 3 sub(0,a);
-    substitute Singularity[0->2](a):[1,0|2,0];
-    substitute ~IdentityRight:[1,1|2,1];
-    substitute ~DistributeSub:[1|2];
+    substitute ~AnnihilatorRight(mult,-)(a):[1,0|2,0];
+    substitute ~IdentityRight(mult,-):[1,1|2,1];
+    substitute ~DistributeLeft:[1|2];
     substitute Commute:1;
 } result {
     sub(0,a)=mult(sub(0,1),a)=mult(a,sub(0,1))

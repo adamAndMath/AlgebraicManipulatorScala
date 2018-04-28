@@ -8,7 +8,7 @@ trait Environment extends Element {
   def toFull(path: List[String], predicate: Element => Boolean): Option[List[String]]
 
   override def filter(predicate: Element => Boolean): Traversable[Element] = None
-  override def validate(env: Environment): Traversable[(List[String], String)] = None
+  override def validate(name: String, env: Environment): Traversable[(List[String], String)] = None
 
   def apply(path: List[String], predicate: Element => Boolean): Option[Element] =
     if (path.tail.isEmpty) apply(path.head, predicate)
@@ -58,7 +58,7 @@ object Environment {
         case _ => env.filter(predicate)
       }
 
-    override def validate(env: Environment): Traversable[(List[String], String)] =
-      this.env.validate(env) ++ element.validate(this)
+    override def validate(name: String, env: Environment): Traversable[(List[String], String)] =
+      this.env.validate(name, env) ++ element.validate(key, this).map(e => (key::e._1) -> e._2)
   }
 }

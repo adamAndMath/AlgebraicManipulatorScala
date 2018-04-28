@@ -1,3 +1,4 @@
+import Properties;
 import Numbers;
 import Numbers;
 import base.Add;
@@ -33,22 +34,22 @@ prove ide SuccRight(Integer -> Complex f, Integer a, Integer b) {
 inductive ide PredLeft(Integer -> Complex f, Integer a, Integer b) {
     base b = a {
         let 2 prod(f,sub(a,1),a)
-        substitute ~Sub.AddSub(-,1):1,2
+        substitute ~InverseRight(add,sub)(-,1):1,2
         substitute SuccRight:1
         substitute Single:1,0
         substitute ~Single:1,1
-        substitute Sub.AddSub:1,1,[1|2]
+        substitute InverseRight:1,1,[1|2]
     } b -> add(b,1) {
         call x mult(x,f(add(b,1)))
-        substitute Mult.Associate:1
+        substitute Associate:1
         substitute ~SuccRight:[0|1,1]
     } b -> sub(b,1) {
-        substitute ~Sub.AddSub(-,1):[0|1,1],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1,1],2
         substitute SuccRight:[0|1,1]
-        substitute Sub.AddSub:[0|1,1],1,0
-        substitute ~Mult.Associate:1
+        substitute InverseRight:[0|1,1],1,0
+        substitute ~Associate:1
         call x div(x,f(b))
-        substitute Div.DivMult:[0|1]
+        substitute InverseRight:[0|1]
     }
 } result {
     prod(f,sub(a,1),b)=mult(f(sub(a,1)),prod(f,a,b))
@@ -56,12 +57,12 @@ inductive ide PredLeft(Integer -> Complex f, Integer a, Integer b) {
 
 prove ide Identity(Integer -> Complex f, Integer a) {
     let 2 prod(f,a,sub(a,1))
-    substitute ~Div.DivMult(-,f(a)):1
-    substitute ~Sub.AddSub(-,1):1,0,1,0
+    substitute ~InverseRight(div,mult)(-,f(a)):1
+    substitute ~InverseRight(add,sub)(-,1):1,0,1,0
     substitute ~SuccRight:1,0
-    substitute Sub.AddSub:1,0,2
+    substitute InverseRight:1,0,2
     substitute Single:1,0
-    substitute Div.Inverse:1
+    substitute Matching:1
 } result {
     prod(f,a,sub(a,1))=1
 }
@@ -71,21 +72,21 @@ inductive ide IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer 
         let 2 1
         substitute ~Identity(i -> f(add(i,c)),a):0
         substitute ~Identity(f,add(a,c)):1
-        substitute Sub.Commute2[0->2]:1,2
+        substitute ~OuterCommuteRight:1,2
     } b -> add(b,1) {
         call x mult(x,f(add(add(b,c),1)))
-        substitute Add.OuterCommute:0,1,0
+        substitute OuterCommuteRight:0,1,0
         wrap i -> f(add(i,c)):0,1
         substitute ~SuccRight:[0|1]
-        substitute Add.OuterCommute:1,2
+        substitute OuterCommuteRight:1,2
     } b -> sub(b,1) {
-        substitute ~Sub.AddSub(-,1):[0|1],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1],2
         substitute SuccRight:[0|1]
-        substitute Sub.AddSub:[0|1],1,0
+        substitute InverseRight:[0|1],1,0
         unwrap:0,1
         call x div(x,f(add(b,c)))
-        substitute Div.DivMult:[0|1]
-        substitute Sub.Commute2[0->2]:1,2
+        substitute InverseRight:[0|1]
+        substitute ~OuterCommuteRight:1,2
     }
 } result {
     prod(i -> f(add(i,c)),a,b)=prod(f,add(a,c),add(b,c))
@@ -93,10 +94,10 @@ inductive ide IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer 
 
 prove ide IndexShiftSub<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
     let 2 prod(i -> f(sub(i,c)),a,b)
-    substitute ~Sub.AddSub(-,c):1,[1|2]
+    substitute ~InverseRight(add,sub)(-,c):1,[1|2]
     substitute ~IndexShift<i>:1
     unwrap:1,0,0
-    substitute Sub.SubAdd:1,0,0,0
+    substitute InverseRight:1,0,0,0
     unwrap:1,0
 } result {
     prod(i -> f(sub(i,c)),a,b)=prod(f,sub(a,c),sub(b,c))
@@ -106,31 +107,31 @@ inductive ide Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
     base b=a {
         let 2 prod(f,a,a)
         substitute Single:1
-        substitute Sub.Negate:1,0
+        substitute ~NegateLeft(sub,-):1,0
         wrap i -> f(sub(0,i)):1
         substitute ~Single:1
     } b -> add(b,1) {
         call x mult(x,f(add(b,1)))
-        substitute Mult.Commute:1
+        substitute Commute:1
         substitute ~SuccRight:0
-        substitute Sub.Negate:1,0,0,0;
-        substitute Sub.Commute2[2->3]:1,0,0
+        substitute ~NegateLeft(sub,-):1,0,0,0;
+        substitute AssociateMut:1,0,0
         wrap i -> f(sub(0,i)):1,0
         substitute ~PredLeft:1
-        substitute Sub.Commute[0->2]:1,1
+        substitute AssociateMut:1,1
     } b -> sub(b,1){
-        substitute ~Sub.AddSub(-,1):0,2
+        substitute ~InverseRight(add,sub)(-,1):0,2
         substitute SuccRight:0;
-        substitute ~Sub.SubAdd(-,1):1,1
+        substitute ~InverseRight(sub,add)(-,1):1,1
         substitute PredLeft:1
         unwrap:1,0
-        substitute Mult.Commute:1;
-        substitute Sub.AddSub:0,1,0
-        substitute Sub.SubAdd:1,1,0,1
-        substitute ~Sub.Negate(b):1,1,0;
-        substitute Sub.Commute2[2->3]:1,0,1;
+        substitute Commute:1;
+        substitute InverseRight:0,1,0
+        substitute InverseRight:1,1,0,1
+        substitute NegateLeft:1,1,0;
+        substitute AssociateMut:1,0,1;
         call x div(x,f(b));
-        substitute Div.DivMult:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     prod(f,a,b)=prod(i -> f(sub(0,i)),sub(0,b),sub(0,a))
@@ -139,14 +140,15 @@ inductive ide Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
 prove ide FixedReverse<i>(Integer -> Complex f, Integer a, Integer b) {
     let 2 prod(f,a,b)
     substitute Reverse<i>:1
-    substitute ~Sub.Inverse(a):1,1,0
-    substitute ~Sub.Inverse(b):1,2,0
-    substitute Sub.Commute[0->2]:1,[1|2]
-    substitute Add.Commute:1,2,1
+    substitute ~Matching(sub,-)(a):1,1,0
+    substitute ~Matching(sub,-)(b):1,2,0
+    substitute AssociateMut:1,[1|2]
+    substitute Commute:1,2,1
     substitute ~IndexShiftSub<i>:1
     unwrap:1,0,0
-    substitute Sub.Commute2[3->0]:1,0,0,0
-    substitute Add.IdentityLeft:1,0,0,0,0
+    substitute ~AssociateMut:1,0,0,0
+    substitute OuterCommuteRight:1,0,0,0
+    substitute IdentityLeft:1,0,0,0,0
 } result {
     prod(f,a,b)=prod(i -> f(sub(add(a,b),i)),a,b)
 }
@@ -154,20 +156,20 @@ prove ide FixedReverse<i>(Integer -> Complex f, Integer a, Integer b) {
 inductive ide RangeSplit(Integer -> Complex f, Integer a, Integer b, Integer c) {
     base c=b {
         let 2 prod(f,a,b);
-        substitute ~Mult.IdentityRight:1;
+        substitute ~IdentityRight(mult,-):1;
         substitute ~Identity(f,add(b,1)):1,1;
-        substitute Sub.SubAdd:1,1,2;
+        substitute InverseRight:1,1,2;
     } c -> add(c,1) {
         call x mult(x,f(add(c,1)));
-        substitute Mult.Associate:1;
+        substitute Associate:1;
         substitute ~SuccRight:[0|1,1];
     } c -> sub(c,1){
-        substitute ~Sub.AddSub(-,1):[0|1,1],2;
+        substitute ~InverseRight(add,sub)(-,1):[0|1,1],2;
         substitute SuccRight:[0|1,1];
-        substitute Sub.AddSub:[0|1,1],1,0;
-        substitute ~Mult.Associate:1;
+        substitute InverseRight:[0|1,1],1,0;
+        substitute ~Associate:1;
         call x div(x,f(c));
-        substitute Div.DivMult:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     prod(f,a,c)=mult(prod(f,a,b),prod(f,add(b,1),c))
@@ -180,23 +182,23 @@ inductive ide Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer 
         substitute ~Single:[0|1,[0|1]];
     } b -> add(b,1) {
         call x mult(x,mult(f(add(b,1)),g(add(b,1))))
-        substitute ~Mult.Associate:1
-        substitute Mult.OuterCommute:1,0
-        substitute Mult.Associate:1
+        substitute ~Associate:1
+        substitute OuterCommuteRight:1,0
+        substitute Associate:1
         wrap i -> mult(f(i),g(i)):0,1
         substitute ~SuccRight:[0|1,[0|1]]
     } b -> sub(b,1){
-        substitute ~Sub.AddSub(-,1):[0|1,[0|1]],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1,[0|1]],2
         substitute SuccRight:[0|1,[0|1]]
         unwrap:0,1
-        substitute Sub.AddSub:[0,1,[0|1]|1,[0|1],1],0;
+        substitute InverseRight:[0,1,[0|1]|1,[0|1],1],0;
 
-        substitute ~Mult.Associate:1;
-        substitute Mult.OuterCommute:1,0
-        substitute Mult.Associate:1;
+        substitute ~Associate:1;
+        substitute OuterCommuteRight:1,0
+        substitute Associate:1;
 
         call x div(x,mult(f(b),g(b)));
-        substitute Div.DivMult:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     prod(i -> mult(f(i),g(i)),a,b)=mult(prod(f,a,b),prod(g,a,b))
@@ -204,10 +206,10 @@ inductive ide Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer 
 
 prove ide DistributeDiv<i>(Integer -> Complex f, Integer -> Complex g, Integer a, Integer b) {
     let 2 prod(i -> div(f(i),g(i)),a,b)
-    substitute ~Div.DivMult(-,prod(g,a,b)):1
+    substitute ~InverseRight(div,mult)(-,prod(g,a,b)):1
     substitute ~Distribute<i>:1,0
     unwrap:1,0,0,0,0
-    substitute Div.MultDiv:1,0,0,0
+    substitute InverseRight:1,0,0,0
     unwrap:1,0,0
 } result {
     prod(i -> div(f(i),g(i)),a,b)=div(prod(f,a,b),prod(g,a,b))
@@ -227,15 +229,15 @@ inductive ide Commute<i,j>((Integer,Integer) -> Complex f, Integer a1, Integer b
         wrap i -> f(i,j):1,0,0,1
         substitute ~SuccRight:[0|1,0,0]
     } b1 -> sub(b1,1){
-        substitute ~Sub.AddSub(-,1):[0|1,0,0],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1,0,0],2
         substitute SuccRight:[0|1,0,0];
-        substitute Sub.AddSub:[0|1,0,0],1,0
+        substitute InverseRight:[0|1,0,0],1,0
         unwrap:[0|1,0,0],1
         wrap j -> prod(i -> f(i,j),a1,sub(b1,1)):1,0,0,0
         wrap j -> f(b1,j):1,0,0,1
         substitute Distribute:1;
         call x div(x,prod(j -> f(b1,j),a2,b2));
-        substitute Div.DivMult:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     prod(i -> prod(j -> f(i,j),a2,b2),a1,b1)=prod(j -> prod(i -> f(i,j),a1,b1),a2,b2)
@@ -255,7 +257,7 @@ inductive ide TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, In
         wrap i -> prod(j -> f(i,j),a,i):0,1
         substitute ~SuccRight:0
         substitute SuccRight:1,1
-        substitute ~Mult.Associate:1
+        substitute ~Associate:1
         substitute ~Distribute<j>:1,0
         unwrap:1,[0,0,0,[0|1]|1]
         wrap i -> f(i,j):1,0,0,0,1
@@ -265,22 +267,22 @@ inductive ide TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, In
         wrap j -> prod(i -> f(i,j),j,add(n,1)):1,1
         substitute ~SuccRight:1;
     } n -> sub(n,1){
-        substitute ~Sub.AddSub(-,1):[0|1,0,0],2
+        substitute ~InverseRight(add,sub)(-,1):[0|1,0,0],2
         substitute SuccRight:[0|1,0,0]
-        substitute Sub.AddSub:[0|1,0,0],1,0
+        substitute InverseRight:[0|1,0,0],1,0
         unwrap:[0|1,0,0],1
         wrap j -> prod(i -> f(i,j),j,sub(n,1)):1,0,0,0
         wrap j -> f(n,j):1,0,0,1
         substitute Distribute:1;
-        substitute ~Sub.AddSub(-,1):1,0,2
+        substitute ~InverseRight(add,sub)(-,1):1,0,2
         substitute SuccRight:1,0;
-        substitute Sub.AddSub:1,0,1,0
+        substitute InverseRight:1,0,1,0
         unwrap:1,0,1
         substitute Identity:1,0,1;
-        substitute Mult.IdentityRight:1,0;
+        substitute IdentityRight:1,0;
 
         call x div(x,prod(j -> f(n,j),a,n));
-        substitute Div.DivMult:[0|1];
+        substitute InverseRight:[0|1];
     }
 } result {
     prod(i -> prod(j -> f(i,j),a,i),a,n)=prod(j -> prod(i -> f(i,j),j,n),a,n)

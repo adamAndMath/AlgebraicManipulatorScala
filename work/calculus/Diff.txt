@@ -1,3 +1,4 @@
+import Properties
 import Numbers
 import base.Add
 import base.Sub
@@ -8,8 +9,6 @@ import base.Log
 import Lim
 import Ln
 import Euler
-using base.Add
-using base.Sub
 using base.Mult
 using base.Div
 using base.Pow
@@ -29,8 +28,8 @@ prove ide Factor<x>(Complex -> Complex f, Complex a) {
     let 2 diff(x -> mult(a, f(x)))(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
-    substitute ~Mult.DistributeSub:1,1,0,0
-    substitute Div.Commute2[0->1]:1,1,0
+    substitute ~DistributeLeft:1,1,0,0
+    substitute AssociateMut:1,1,0
     wrap v -> div(sub(f(add(x,v)),f(x)),v):1,1,0,1
     wrap u -> mult(a, u):1,1,0
     substitute Lim.Func[0->1]:1
@@ -44,10 +43,10 @@ prove ide Distribute<x>(Complex -> Complex f, Complex -> Complex g) {
     let 2 diff(x -> add(f(x),g(x)))(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
-    substitute Sub.Commute2[0->2]:1,1,0,0
-    substitute Sub.Commute[2->0]:1,1,0,0,0
-    substitute Sub.Commute2[2->1]:1,1,0,0
-    substitute Div.Distribute:1,1,0
+    substitute ~AssociateMut:1,1,0,0
+    substitute ~OuterCommuteRight:1,1,0,0,0
+    substitute AssociateMut:1,1,0,0
+    substitute DistributeRight:1,1,0
     wrap v -> div(sub(f(add(x,v)),f(x)),v):1,1,0,0
     wrap v -> div(sub(g(add(x,v)),g(x)),v):1,1,0,1
     substitute Lim.Func2:1;
@@ -58,13 +57,13 @@ prove ide Distribute<x>(Complex -> Complex f, Complex -> Complex g) {
 
 prove ide DistributeSub<x>(Complex -> Complex f, Complex -> Complex g) {
     let 2 diff(x -> sub(f(x),g(x)))(x)
-    substitute Sub.AsAdd:1,-1,0,0
+    substitute AsRight:1,-1,0,0
     substitute Mult.NegAsMult:1,-1,0,0,1
     wrap x -> mult(sub(0,1),g(x)):1,-1,0,0,1
     substitute Distribute:1
     substitute Factor:1,1
     substitute ~Mult.NegAsMult:1,1
-    substitute ~Sub.AsAdd:1
+    substitute ~AsRight:1
 } result {
     diff(x -> sub(f(x), g(x)))(x) = sub(diff(f)(x),diff(g)(x))
 }
@@ -73,21 +72,21 @@ prove ide Product<x,h>(Complex -> Complex f, Complex -> Complex g) {
     let 2 diff(x -> mult(f(x),g(x)))(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
-    substitute ~Sub.AddSub(-,f(x)):1,1,0,0,0,0;
-    substitute ~Sub.AddSub(-,g(x)):1,1,0,0,0,1;
-    substitute Mult.Commute:1,1,0,0,0;
-    substitute Mult.Distribute:1,1,0,0,0;
-    substitute Mult.Commute:1,1,0,0,0,[0|1];
-    substitute Mult.Distribute:1,1,0,0,0,[0|1];
-    substitute ~Add.Associate:1,1,0,0,0;
-    substitute Sub.SubAdd:1,1,0,0;
-    substitute Div.Distribute:1,1,0;
-    substitute Div.Distribute:1,1,0,0;
-    substitute Div.Commute2[0->1]:1,1,0,0,0;
-    substitute ~Div.MultDiv(-,h):1,1,0,0,0,0;
-    substitute Mult.Commute:1,1,0,0,0,0;
-    substitute Div.Commute2[0->2]:1,1,0,0,1;
-    substitute Div.Commute2[0->1]:1,1,0,1;
+    substitute ~InverseRight(add,sub)(-,f(x)):1,1,0,0,0,0;
+    substitute ~InverseRight(add,sub)(-,g(x)):1,1,0,0,0,1;
+    substitute Commute:1,1,0,0,0;
+    substitute DistributeLeft:1,1,0,0,0;
+    substitute Commute:1,1,0,0,0,[0|1];
+    substitute DistributeLeft:1,1,0,0,0,[0|1];
+    substitute ~Associate:1,1,0,0,0;
+    substitute InverseRight:1,1,0,0;
+    substitute DistributeRight:1,1,0;
+    substitute DistributeRight:1,1,0,0;
+    substitute AssociateMut:1,1,0,0,0;
+    substitute ~InverseRight(mult,div)(-,h):1,1,0,0,0,0;
+    substitute Commute:1,1,0,0,0,0;
+    substitute ~OuterCommuteRight:1,1,0,0,1;
+    substitute AssociateMut:1,1,0,1;
 
     wrap h -> add(mult(mult(h,div(sub(f(add(x,h)),f(x)),h)),div(sub(g(add(x,h)),g(x)),h)),mult(div(sub(f(add(x,h)),f(x)),h),g(x))):1,1,0,0
     wrap h -> mult(f(x),div(sub(g(add(x,h)),g(x)),h)):1,1,0,1
@@ -114,9 +113,9 @@ prove ide Product<x,h>(Complex -> Complex f, Complex -> Complex g) {
     substitute ~Definition:1,[0,[0,[0,1|1]|1,0]|1,1]
     substitute Lim.Resolve:1,0,0,0,0
     unwrap:1,0,0,0,0
-    substitute ~Mult.Singularity:1,0,0,0;
-    substitute ~Mult.Singularity:1,0,0;
-    substitute Add.IdentityLeft:1,0;
+    substitute AnnihilatorLeft:1,0,0,0;
+    substitute AnnihilatorLeft:1,0,0;
+    substitute IdentityLeft:1,0;
 } result {
     diff(x -> mult(f(x), g(x)))(x) = add(mult(diff(f)(x),g(x)),mult(f(x),diff(g)(x)))
 }
@@ -125,11 +124,10 @@ prove ide Chain<x>(Complex -> Complex f, Complex -> Complex g) {
     let 2 diff(x -> f(g(x)))(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
-    substitute ~Sub.AddSub(-,g(x)):1,1,0,0,0,0;
-    substitute Add.Commute:1,1,0,0,0,0;
-    substitute ~Div.DivMult(-,sub(g(add(x,h)),g(x))):1,1,0;
-    substitute Div.Commute2[2->1]:1,1,0,0;
-    substitute Div.Commute2[0->2]:1,1,0;
+    substitute ~InverseRight(add,sub)(-,g(x)):1,1,0,0,0,0;
+    substitute Commute:1,1,0,0,0,0;
+    substitute ~InverseRight(mult,div)(-,sub(g(add(x,h)),g(x))):1,1,0,0;
+    substitute AssociateMut:1,1,0
     wrap h -> div(sub(f(add(g(x),sub(g(add(x,h)),g(x)))),f(g(x))),sub(g(add(x,h)),g(x))):1,1,0,0
     wrap h -> div(sub(g(add(x,h)),g(x)),h):1,1,0,1
     substitute Lim.Func2:1
@@ -137,8 +135,8 @@ prove ide Chain<x>(Complex -> Complex f, Complex -> Complex g) {
     wrap h -> sub(g(add(x,h)),g(x)):1,0,1,0,0
     substitute Lim.Func[0->2]:1,0
     unwrap:1,0,0
-    substitute Add.IdentityRight:1,0,0,0,0
-    substitute Sub.Inverse:1,0,0
+    substitute IdentityRight:1,0,0,0,0
+    substitute Matching:1,0,0
     wrap x -> lim(0, h -> div(sub(f(add(x,h)),f(x)),h)):1,0
     substitute ~Definition:1,[0,-1,0|1]
     unwrap:1,0,-1
@@ -150,8 +148,8 @@ prove ide Constant<x>(Complex a) {
     let 2 diff(x -> a)(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
-    substitute Sub.Inverse:1,1,0,0;
-    substitute ~Div.Singularity:1,1,0;
+    substitute Matching:1,1,0,0;
+    substitute AnnihilatorLeft:1,1,0;
     substitute Lim.Resolve:1;
     unwrap:1
 } result {
@@ -162,8 +160,8 @@ prove ide Line<x>(Complex x) {
 	let 2 diff(x -> x)(x)
     substitute Definition<h>:1
     unwrap:1,1,0,0,[0|1]
-	substitute Add.Commute:1,1,0,0,0;
-	substitute Sub.SubAdd:1,1,0,0;
+	substitute Commute:1,1,0,0,0;
+	substitute InverseRight:1,1,0,0;
 	substitute Lim.Div:1;
 } result {
 	diff(x -> x)(x) = 1
@@ -173,11 +171,11 @@ prove ide Ln(Complex x) {
 	let 2 diff(ln)(x)
     substitute Definition<h>:1
 	substitute ~Ln.DistributeSub:1,1,0,0;
-	substitute Div.Distribute:1,1,0,0,0;
-	substitute Div.Inverse:1,1,0,0,0,0;
-	substitute ~Div.MultDiv(-,x):1,1,0,1;
-	substitute Div.Commute[2->0]:1,1,0;
-	substitute Div.AsMult[0->1]:1,1,0,0;
+	substitute DistributeRight:1,1,0,0,0;
+	substitute Matching:1,1,0,0,0,0;
+	substitute ~InverseRight(mult,div)(-,x):1,1,0,1;
+	substitute ~AssociateMut:1,1,0;
+	substitute AsRight:1,1,0,0;
 	substitute ~Ln.LnMult:1,1,0,0;
 	wrap h -> pow(add(1,div(h,x)),div(1,div(h,x))):1,1,0,0,0
 	wrap u -> div(ln(u),x):1,1,0
@@ -187,7 +185,7 @@ prove ide Ln(Complex x) {
 	wrap h -> div(h,x):1,0,0,1,0,0
 	substitute Lim.Func[0->2]:1,0,0;
 	unwrap:1,0,0,0
-	substitute ~Div.Singularity:1,0,0,0;
+	substitute AnnihilatorLeft:1,0,0,0;
 	wrap e:1,0,0;
 	substitute Ln.Inverse:1,0;
 } result {
@@ -197,12 +195,12 @@ prove ide Ln(Complex x) {
 prove ide Log<x>(Complex a, Complex x) {
 	let 2 diff(x -> log(a,x))(x)
 	substitute Ln.ChangeBase:1,-1,0,0;
-	substitute Div.AsMult:1,-1,0,0;
-	substitute Mult.Commute:1,-1,0,0;
+	substitute AsRight:1,-1,0,0;
+	substitute Commute:1,-1,0,0;
 	substitute Factor:1;
 	substitute Ln:1,1;
-	substitute ~Div.AsMult:1;
-	substitute Div.Commute[0->2]:1;
+	substitute ~AsRight:1;
+	substitute AssociateMut:1;
 } result {
 	diff(x -> log(a,x))(x) = div(1,mult(ln(a),x))
 }
@@ -215,11 +213,11 @@ prove ide Exp<x>(Complex x) {
 	unwrap:0,0,0
 	substitute Ln:0,0
 	substitute Line:1
-	substitute Mult.Commute:0
-	substitute ~Div.AsMult:0
+	substitute Commute:0
+	substitute ~AsRight:0
 	call f mult(f,pow(e,x))
-	substitute Div.MultDiv:0
-	substitute Mult.IdentityLeft:1
+	substitute InverseRight(mult,div):0
+	substitute IdentityLeft:1
 } result {
 	diff(x -> pow(e,x))(x) = pow(e,x)
 }
@@ -227,7 +225,7 @@ prove ide Exp<x>(Complex x) {
 prove ide Exponential<x>(Complex a, Complex x) {
 	let 2 diff(x -> pow(a,x))(x)
 	substitute ~Ln.PowLn:1,-1,0,0,0
-	substitute Pow.Combine:1,-1,0,0
+	substitute AssociateMut:1,-1,0,0
 	wrap x -> mult(ln(a),x):1,-1,0,0,1
 	wrap x -> pow(e,x):1,-1,0,0
 	substitute Chain:1
@@ -235,11 +233,11 @@ prove ide Exponential<x>(Complex a, Complex x) {
 	wrap x -> x:1,1,-1,0,0,1
     substitute Factor:1,1
     substitute Line:1,1,1
-    substitute Mult.IdentityRight:1,1
+    substitute IdentityRight:1,1
 	substitute Exp:1,0
-	substitute ~Pow.Combine:1,0
+	substitute ~AssociateMut:1,0
 	substitute Ln.PowLn:1,0,0
-	substitute Mult.Commute:1
+	substitute Commute:1
 } result {
 	diff(x -> pow(a,x))(x) = mult(ln(a),pow(a,x))
 }
@@ -247,23 +245,23 @@ prove ide Exponential<x>(Complex a, Complex x) {
 prove ide Pow<x>(Complex n, Complex x) {
 	let 2 diff(x -> pow(x,n))(x)
 	substitute ~Ln.PowLn:1,-1,0,0,0
-	substitute Pow.Combine:1,-1,0,0
+	substitute AssociateMut:1,-1,0,0
 	wrap x -> mult(ln(x),n):1,-1,0,0,1
 	wrap x -> pow(e,x):1,-1,0,0
 	substitute Chain:1
 	unwrap:1,0,0
-	substitute Mult.Commute:1,1,-1,0,0
+	substitute Commute:1,1,-1,0,0
 	substitute Factor:1,1
 	substitute Ln:1,1,1
 	substitute Exp:1,0
-	substitute ~Mult.Associate:1
-	substitute Mult.Commute:1,0
-	substitute Mult.Associate:1
-	substitute ~Div.AsMult:1,1
-	substitute ~Pow.Combine:1,1,0
+	substitute ~Associate:1
+	substitute Commute:1,0
+	substitute Associate:1
+	substitute ~AsRight:1,1
+	substitute ~AssociateMut:1,1,0
 	substitute Ln.PowLn:1,1,0,0
-	substitute ~Pow.Identity:1,1,1
-	substitute ~Pow.Division:1,1
+	substitute ~IdentityRight(pow,-):1,1,1
+	substitute ~DistributeMutLeft:1,1
 } result {
 	diff(x -> pow(x,n))(x) = mult(n,pow(x,sub(n,1)))
 }

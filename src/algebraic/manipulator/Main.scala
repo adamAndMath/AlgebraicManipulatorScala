@@ -23,7 +23,7 @@ object Main {
     val project = projectTemplate()
 
     if (safe) {
-      val errs = project.validate(Environment.empty)
+      val errs = project.validate("", Environment.empty)
 
       if (errs.nonEmpty)
         throw new IllegalStateException("Validation errors:\n"+errs.map(e => s"${e._1.mkString(".")}: ${e._2}").mkString("\n"))

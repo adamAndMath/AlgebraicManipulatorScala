@@ -10,6 +10,7 @@ import algebraic.manipulator.function._
 import algebraic.manipulator.manipulation._
 import algebraic.manipulator.objects._
 import algebraic.manipulator.options.Options
+import algebraic.manipulator.properties.{PropImpl, Property}
 import algebraic.manipulator.specifiers.Header
 import algebraic.manipulator.structure._
 
@@ -86,6 +87,7 @@ object LatexWriter {
   }
 
   def getLocation(element: Element): ElementLocation = element match {
+    case PropImpl(_, _, ide) => getLocation(ide)
     case _: Assumption => AssumptionLocation
     case _: AssumedFunction => IgnoredLocation
     case SimpleStructure => IgnoredLocation
@@ -93,10 +95,12 @@ object LatexWriter {
     case _: ObjectElement => DefinitionLocation
     case _: FunctionElement => DefinitionLocation
     case _: Identity => ProofLocation
+    case _: Property => DefinitionLocation
     case _ => throw new IllegalArgumentException(s"${element.getClass} doesn't have a location")
   }
 
   def writeElementDefinition(name: String, element: Element): String = element match {
+    case PropImpl(_, _, ide) => writeElementDefinition(name, ide)
     case AssumedObject => s"Let $name be an object"
     case SimpleObject(exp) => s"Let $$${writeExp(Variable(name))} = ${writeExp(exp)}$$"
     case InductiveStructure(header, base, steps) =>
@@ -111,13 +115,17 @@ object LatexWriter {
         s"    ${base.exp} & \\quad ${base.inductive} = ${base.value}" +
         s"${steps.map(s => s"\\\\\n    ${s.exp} & \\quad ${s.step}").mkString}" +
         "\n  \\end{cases}$"
+    case Property(_, _, ideHeader, ide) =>
+      s"$$$name\\Leftrightarrow ${writeDefinition(ideHeader)}${ide.map(writeExp(_)).mkString("=")}$$"
   }
 
   def writeAssumption(element: Element): String = element match {
+    case PropImpl(_, _, ide) => writeAssumption(ide)
     case a: Assumption => s"$$${writeDefinition(a.header)}${a.result.map(writeExp(_)).mkString("=")}$$"
   }
 
   def writeElement(env: Environment, element: Element): String = element match {
+    case PropImpl(_, _, ide) => writeElement(env, ide)
     case p: Proof =>
       var exps = List.fill(p.count)(p.origin)
       var res = ""
@@ -168,9 +176,14 @@ object LatexWriter {
   def getInputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, from, _, _) =>
-      val identity = env.find(path, _.isInstanceOf[Substitutable]).get.asInstanceOf[Identity]
-      val parameters = identity.header.parameters.map(_.variable)
-      positions :: identity.result(from).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
+      env.find(path, _.isInstanceOf[Substitutable]).get match {
+        case ide: Identity =>
+          val parameters = ide.header.parameters.map(_.variable)
+          positions :: ide.result(from).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
+        case Property(_, _, ideHeader, ide) =>
+          val parameters = ideHeader.parameters.map(_.variable)
+          positions :: ide(from).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
+      }
     case Rename(positions, _, _) => positions :> colors.head
     case Wrap(_, positions) => positions :> colors.head
     case Unwrap(positions) => positions :> colors.head
@@ -179,9 +192,14 @@ object LatexWriter {
   def getOutputColors(env: Environment, exps: List[Exp], manipulation: Manipulation): PathTree[String] = manipulation match {
     case Call(_, _) => PathTree.empty
     case Substitute(positions, path, _, to, _) =>
-      val identity = env.find(path, _.isInstanceOf[Substitutable]).get.asInstanceOf[Identity]
-      val parameters = identity.header.parameters.map(_.variable)
-      positions :: identity.result(to).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
+      env.find(path, _.isInstanceOf[Substitutable]).get match {
+        case ide: Identity =>
+          val parameters = ide.header.parameters.map(_.variable)
+          positions :: ide.result(to).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
+        case Property(_, _, ideHeader, ide) =>
+          val parameters = ideHeader.parameters.map(_.variable)
+          positions :: ide(to).tree.filter(parameters.contains).map(parameters.indexOf(_)).map(colors)
+      }
     case Rename(positions, _, _) => positions :> colors.head
     case Wrap(_, positions) => positions :> colors.head
     case Unwrap(positions) => positions :> colors.head
@@ -190,8 +208,12 @@ object LatexWriter {
   def writeManipulation(env: Environment, manipulation: Manipulation): String = manipulation match {
     case Call(temp, exp) => s"Call $$${writeExp(exp, exp.tree.filter(_ == temp).map(_ => colors.head))}$$"
     case Substitute(_, path, from, to, _) =>
-      val identity = env.find(path, _.isInstanceOf[Substitutable]).get.asInstanceOf[Identity]
-      writeIdentityReference(env.toFull(path, _.isInstanceOf[Substitutable]).get, identity.header, List(from, to).map(identity.result))
+      env.find(path, _.isInstanceOf[Substitutable]).get match {
+        case ide: Identity =>
+          writeIdentityReference(env.toFull(path, _.isInstanceOf[Substitutable]).get, ide.header, List(from, to).map(ide.result))
+        case Property(_, _, ideHeader, ide) =>
+          writeIdentityReference(env.toFull(path, _.isInstanceOf[Substitutable]).get, ideHeader, List(from, to).map(ide))
+      }
     case Rename(_, from, to) => s"Renaming $from to $to"
     case Wrap(Variable(name), _) => env.find(List(name), _.isInstanceOf[Wrapable]).get match {
       case SimpleObject(exp) => writeIdentityReference(env.toFull(List(name), _.isInstanceOf[Wrapable]).get, Header(Nil, Nil, Nil), List(Variable(name), exp))

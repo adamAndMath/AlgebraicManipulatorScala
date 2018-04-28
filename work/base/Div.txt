@@ -1,3 +1,4 @@
+import Properties
 import Numbers
 import Add
 import Sub
@@ -5,112 +6,101 @@ import Mult
 
 assume fn div(Complex, Complex)
 
-assume ide MultDiv(Complex a, Complex b)
-    mult(div(a,b),b)=a
+assume prop InverseRight(mult, div)
 
-assume ide DivMult(Complex a, Complex b)
-    div(mult(a,b),b)=a
+assume prop InverseRight(div, mult)
 
-prove ide Identity(Complex a) {
-    let 2 a;
-    substitute ~MultDiv(-,1):1;
-    substitute Mult.IdentityRight:1;
-} result {
-    a=div(a,1)
+prove prop IdentityRight(div, 1)(Complex a) {
+    let 2 div(a,1);
+    substitute ~IdentityRight(mult,1):1;
+    substitute InverseRight(mult,div)(-,1):1;
 }
 
-prove ide Inverse(Complex a) {
-    let 2 1;
-    substitute ~DivMult(-,a):0;
-    substitute Mult.IdentityLeft:0,0;
-} result {
-    div(a,a)=1
+prove prop Matching(div, 1)(Complex a) {
+    let 2 div(a,a);
+    substitute ~IdentityLeft(mult,1):1,0;
+    substitute InverseRight(div,mult)(-,a):1;
 }
 
-prove ide AsMult(Complex a, Complex b) {
+prove prop AsRight(div, mult, 1)(Complex a, Complex b) {
     let 2 div(a,b);
-    substitute ~Mult.IdentityRight:1,0;
-    substitute ~MultDiv(-,b):1,0,1;
-    substitute ~Mult.Associate:1,0;
-    substitute DivMult:1;
-} result {
-    div(a,b)=mult(a,div(1,b))
+    substitute ~IdentityRight(mult,-):1,0;
+    substitute ~InverseRight(mult,div)(-,b):1,0,1;
+    substitute ~Associate:1,0;
+    substitute InverseRight:1;
 }
 
-prove ide Commute(Complex a, Complex b, Complex c) {
-    let 3 div(div(a,b),c);
-    substitute AsMult:1;
-    substitute AsMult:1,0;
-    substitute Mult.OuterCommute:1
-    substitute ~AsMult:1,0;
-    substitute ~AsMult:1;
-
-    substitute ~MultDiv(-,mult(b,c)):2,0,0;
-    substitute Mult.Commute:2,0,0,1;
-    substitute ~Mult.Associate:2,0,0;
-    substitute DivMult:2,0;
-    substitute DivMult:2;
-} result {
-    div(div(a,b),c)=div(div(a,c),b)=div(a,mult(b,c))
+prove prop OuterCommuteRight(div,div) (Complex a, Complex b, Complex c) {
+    let 2 div(div(a,b),c)
+    substitute AsRight:1
+    substitute AsRight:1,0
+    substitute OuterCommuteRight:1
+    substitute ~AsRight:1,0
+    substitute ~AsRight:1
 }
 
-prove ide Commute2(Complex a, Complex b, Complex c) {
-    let 4 div(mult(a,b),c);
-    substitute AsMult:[1|2|3];
-    substitute Mult.Associate:1;
-    substitute Mult.OuterCommute:[2|3];
-    substitute ~AsMult:[1,1|2,0|3,0];
+prove prop OuterCommuteRight(mult,div) (Complex a, Complex b, Complex c) {
+    let 2 mult(div(a,b),c)
+    substitute AsRight:1,0
+    substitute OuterCommuteRight:1
+    substitute ~AsRight:1
+}
 
-    substitute ~MultDiv(-,b):3,0,1;
-    substitute Commute[2->0]:3,0;
-    substitute MultDiv:3;
-} result {
-    div(mult(a,b),c)=mult(a,div(b,c))=mult(div(a,c),b)=div(a,div(c,b))
+prove prop AssociateMut(div,div,div,mult) (Complex a, Complex b, Complex c) {
+    let 2 div(div(a,b),c)
+    substitute ~InverseRight(mult,div)(-,mult(b,c)):1,0,0
+    substitute Commute:1,0,0,1
+    substitute ~Associate:1,0,0
+    substitute InverseRight:1,0
+    substitute InverseRight:1
+}
+
+prove prop AssociateMut(div,mult,mult,div) (Complex a, Complex b, Complex c) {
+    let 2 div(mult(a,b),c)
+    substitute Commute:1,0
+    substitute ~OuterCommuteRight:1
+    substitute Commute:1
+}
+
+prove prop AssociateMut(mult,div,div,div) (Complex a, Complex b, Complex c) {
+    let 2 mult(div(a,b),c)
+    substitute ~InverseRight(mult,div)(-,c):1,0,1
+    substitute ~AssociateMut:1,0
+    substitute InverseRight:1
 }
 
 prove ide MultFrac(Complex a, Complex b, Complex c, Complex d) {
     let 2 mult(div(a,c),div(b,d))
-    substitute Commute2[1->0]:1
-    substitute Commute2[2->0]:1,0
-    substitute Commute[0->2]:1
+    substitute ~AssociateMut:1
+    substitute OuterCommuteRight:1,0
+    substitute AssociateMut:1
 } result {
     mult(div(a,c),div(b,d))=div(mult(a,b),mult(c,d))
 }
 
-prove ide Distribute(Complex f, Complex a, Complex b) {
-    let 2 div(add(a,b),f);
-    substitute AsMult[0->1]:1;
-    substitute Mult.Commute:1;
-    substitute Mult.Distribute:1;
-    substitute Mult.Commute:1,[0|1];
-    substitute AsMult[1->0]:1,[0|1];
-} result {
-    div(add(a,b),f)=add(div(a,f),div(b,f))
+prove prop DistributeRight(div,add)(Complex a, Complex b, Complex f) {
+    let 2 div(add(a,b),f)
+    substitute AsRight:1
+    substitute DistributeRight:1
+    substitute ~AsRight:1,[0|1]
 }
 
-prove ide DistributeSub(Complex f, Complex a, Complex b) {
-    let 2 sub(div(a,f),div(b,f));
-    substitute ~Sub.AddSub(-,b):0,0,0;
-    substitute Distribute:0,0;
-    substitute Sub.SubAdd:0;
-} result {
-    div(sub(a,b),f)=sub(div(a,f),div(b,f))
+prove prop DistributeRight(div,sub)(Complex a, Complex b, Complex f) {
+    let 2 div(sub(a,b),f)
+    substitute AsRight:1
+    substitute DistributeRight:1
+    substitute ~AsRight:1,[0|1]
 }
 
-prove ide Negate(Complex a) {
-    let 2 a;
-    substitute ~DivMult(-,1):1;
-    substitute Mult.Commute:1,0;
-    substitute Commute2[0->3]:1;
-} result {
-    a=div(1,div(1,a))
+prove prop NegateLeft(div,1)(Complex a) {
+    let 2 div(1,div(1,a))
+    substitute ~AssociateMut:1
+    substitute Matching:1,0
+    substitute IdentityLeft:1
 }
 
-prove ide Singularity(Complex a) {
-    let 2 div(sub(1,1),a);
-    substitute DistributeSub:0;
-    substitute Sub.Inverse:[0|1,0];
-
-} result {
-    0=div(0,a)
+prove prop AnnihilatorLeft(div,0)(Complex a) {
+    let 2 div(sub(1,1),a)
+    substitute DistributeRight:1;
+    substitute Matching:[0,0|1]
 }

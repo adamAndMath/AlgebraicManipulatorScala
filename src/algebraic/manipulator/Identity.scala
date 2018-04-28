@@ -1,20 +1,41 @@
 package algebraic.manipulator
 
 import algebraic.manipulator.manipulation.{Manipulation, Substitutable}
-import algebraic.manipulator.specifiers.{HeadMatch, Header, Specifier}
+import algebraic.manipulator.specifiers.{Header, Specifier}
 
-abstract class Identity(val header: Header, val result: List[Exp]) extends Element with Substitutable {
+abstract class Identity(val header: Header, val result: List[Exp]) extends Substitutable {
   assert(result.flatMap(_.getBound).forall(header.dummies.contains))
 
-  override def substitute(specifiers: List[Specifier]): (List[Exp], HeadMatch) = specifiers match {
-    case Nil => (result, header.toMatch)
-    case List(s) => (result, s.headMatch(header))
-    case _ => throw new IllegalArgumentException(s"An identity takes up to 1 specifier, but received ${specifiers.length}")
+  override def substitute(env: Environment, exp: Exp, specifiers: List[Specifier], from: Int, to: Int): Exp = {
+    val headMatch = specifiers match {
+      case Nil => header.toMatch
+      case List(s) => s.headMatch(header)
+      case _ => throw new IllegalArgumentException(s"An identity takes up to 1 specifier, but received ${specifiers.length}")
+    }
+
+    val fromExp = result(from)
+
+    try {
+      val re = fromExp.matchExp(exp, headMatch)
+        .getOrElse(throw new IllegalStateException(s"Expected substitute of $fromExp, but received $exp"))
+
+      val dums = re.dummies.map{case (p, o) => p -> o.getOrElse(throw new IllegalStateException(s"Undefined dummy $p in $exp"))}
+      val pars = re.parameters.map{case (p, o) => p.variable -> o.getOrElse(throw new IllegalStateException(s"Undefined parameter $p in $exp"))}
+
+      val fromSet = fromExp.setAll(dums, pars)
+
+      if (fromSet != exp)
+        throw new IllegalStateException(s"Expected $fromSet, but received $exp")
+
+      result(to).setAll(dums, pars)
+    } catch {
+      case e: Exception => throw new IllegalArgumentException(s"Expected substitute of $fromExp, but received $exp", e)
+    }
   }
 }
 
 class Assumption(header: Header, result: List[Exp]) extends Identity(header, result) {
-  override def validate(env: Environment): Traversable[(List[String], String)] = None
+  override def validate(name: String, env: Environment): Traversable[(List[String], String)] = None
 }
 
 class Proof(header: Header, result: List[Exp], val count: Int, val origin: Exp) extends Identity(header, result) {
@@ -24,7 +45,7 @@ class Proof(header: Header, result: List[Exp], val count: Int, val origin: Exp) 
   def manipulations: List[Manipulation] = manips.reverse
   def current: List[Exp] = cur
 
-  override def validate(env: Environment): Traversable[(List[String], String)] =
+  override def validate(name: String, env: Environment): Traversable[(List[String], String)] =
     Some(Nil -> s"The current state ${cur.mkString("=")} isn't equal to the expected result ${result.mkString("=")}")
       .filter(_ => (cur zip result).exists(p => p._1 != p._2))
 
@@ -46,7 +67,7 @@ class AssumedProof(header: Header, result: List[Exp], val origin: List[Exp]) ext
   def manipulations: List[Manipulation] = manips.reverse
   def current: List[Exp] = cur
 
-  override def validate(env: Environment): Traversable[(List[String], String)] =
+  override def validate(name: String, env: Environment): Traversable[(List[String], String)] =
     Some(Nil -> s"The current state ${cur.mkString("=")} isn't equal to the expected result ${result.mkString("=")}")
       .filter(_ => (cur zip result).exists(p => p._1 != p._2))
 
@@ -79,9 +100,9 @@ class InductionProof(header: Header, result: List[Exp], val inductives: Map[Vari
     step
   }
 
-  override def validate(env: Environment): Traversable[(List[String], String)] =
-    base.validate(env).map{case (p,v) => ("base"::p) -> v} ++
-      steps.flatMap{case (k, step) => step.flatMap(s => s.proof.validate(env).map{case (p,v) => (s"$k -> ${s.exp}"::p) -> v})}
+  override def validate(name: String, env: Environment): Traversable[(List[String], String)] =
+    base.validate(name, env).map{case (p,v) => ("base"::p) -> v} ++
+      steps.flatMap{case (k, step) => step.flatMap(s => s.proof.validate(name, env).map{case (p,v) => (s"$k -> ${s.exp}"::p) -> v})}
 }
 
 sealed abstract class InductiveStep(header: Header, result: List[Exp], val inductives: Map[Variable, Exp], v: Variable, val params: List[Definition], val exp: Exp) {

@@ -1,3 +1,4 @@
+import Properties
 import Numbers
 import base.Add
 import base.Sub
@@ -13,7 +14,7 @@ define fn ln(Complex a) = log(e, a);
 prove ide LnPow(Complex a) {
     let 2 ln(pow(e,a))
 	unwrap:1
-	substitute Log.LogPow(e,-):1
+	substitute InverseLeft:1
 } result {
 	ln(pow(e,a))=a
 }
@@ -21,7 +22,7 @@ prove ide LnPow(Complex a) {
 prove ide PowLn(Complex a) {
 	let 3 pow(e,ln(a))
 	unwrap:1,1
-	substitute Log.PowLog(e,-):1
+	substitute InverseLeft:1
 } result {
 	pow(e,ln(a))=a
 }
@@ -29,7 +30,7 @@ prove ide PowLn(Complex a) {
 prove ide Inverse {
 	let 2 ln(e)
 	unwrap:1
-	substitute Log.Inverse:1
+	substitute Matching:1
 } result {
 	ln(e)=1
 }
@@ -37,14 +38,14 @@ prove ide Inverse {
 prove ide Singularity {
 	let 2 ln(1)
 	unwrap:1
-	substitute Log.Singularity:1
+	substitute SingularityRight:1
 } result {
 	ln(1)=0
 }
 
 prove ide Distribute(Complex a, Complex b) {
 	let 2 log(e,mult(a,b))
-	substitute Log.Distribute:1
+	substitute DistributeMutLeft:1
 	wrap ln:[0|1,[0|1]]
 } result {
 	ln(mult(a,b))=add(ln(a),ln(b))
@@ -52,19 +53,18 @@ prove ide Distribute(Complex a, Complex b) {
 
 prove ide DistributeSub(Complex a, Complex b) {
 	let 2 log(e,div(a,b))
-	substitute Log.DistributeSub:1
+	substitute DistributeMutLeft:1
 	wrap ln:[0|1,[0|1]]
 } result {
 	ln(div(a,b))=sub(ln(a),ln(b))
 }
 
 prove ide LnMult(Complex a, Complex p) {
-	let 3 log(e,pow(a,p))
-	substitute Log.LogMult[0->1]:1
-	substitute Log.LogMult[0->2]:2
-	wrap ln:[0|1,0|2,1]
+	let 2 log(e,pow(a,p))
+	substitute ~AssociateMut:1
+	wrap ln:[0|1,0]
 } result {
-	ln(pow(a,p))=mult(ln(a),p)=mult(p,ln(a))
+	ln(pow(a,p))=mult(ln(a),p)
 }
 
 prove ide ChangeBase(Complex a, Complex b) {
