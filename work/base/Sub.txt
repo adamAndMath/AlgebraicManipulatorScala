@@ -8,19 +8,19 @@ assume prop InverseRight(add,sub)
 
 assume prop InverseRight(sub,add)
 
-prove prop IdentityRight(sub,0)(Complex a) {
+prove prop IdentityRight(sub,0)(a: Complex) {
     let 2 sub(a,0);
     substitute ~IdentityRight(add,-):1,0;
     substitute InverseRight(sub,add)(-,0):1;
 }
 
-prove prop Matching(sub,0)(Complex a) {
+prove prop Matching(sub,0)(a: Complex) {
     let 2 0;
     substitute ~InverseRight(sub,add)(-,a):0;
     substitute IdentityLeft:0,0;
 }
 
-prove prop AsRight(sub,add,0)(Complex a, Complex b) {
+prove prop AsRight(sub,add,0)(a: Complex, b: Complex) {
     let 2 sub(a,b);
     substitute ~IdentityRight(add,-):1,0;
     substitute ~InverseRight(add,sub)(-,b):1,0,1;
@@ -28,7 +28,7 @@ prove prop AsRight(sub,add,0)(Complex a, Complex b) {
     substitute InverseRight:1;
 }
 
-prove prop OuterCommuteRight(sub,sub) (Complex a, Complex b, Complex c) {
+prove prop OuterCommuteRight(sub,sub) (a: Complex, b: Complex, c: Complex) {
     let 2 sub(sub(a,b),c)
     substitute AsRight:1
     substitute AsRight:1,0
@@ -37,14 +37,14 @@ prove prop OuterCommuteRight(sub,sub) (Complex a, Complex b, Complex c) {
     substitute ~AsRight:1
 }
 
-prove prop OuterCommuteRight(add,sub) (Complex a, Complex b, Complex c) {
+prove prop OuterCommuteRight(add,sub) (a: Complex, b: Complex, c: Complex) {
     let 2 add(sub(a,b),c)
     substitute AsRight:1,0
     substitute OuterCommuteRight:1
     substitute ~AsRight:1
 }
 
-prove prop AssociateMut(sub,sub,sub,add) (Complex a, Complex b, Complex c) {
+prove prop AssociateMut(sub,sub,sub,add) (a: Complex, b: Complex, c: Complex) {
     let 2 sub(sub(a,b),c)
     substitute ~InverseRight(add,sub)(-,add(b,c)):1,0,0
     substitute Commute:1,0,0,1
@@ -53,21 +53,21 @@ prove prop AssociateMut(sub,sub,sub,add) (Complex a, Complex b, Complex c) {
     substitute InverseRight:1
 }
 
-prove prop AssociateMut(sub,add,add,sub) (Complex a, Complex b, Complex c) {
+prove prop AssociateMut(sub,add,add,sub) (a: Complex, b: Complex, c: Complex) {
     let 2 sub(add(a,b),c)
     substitute AsRight:1
     substitute Associate:1
     substitute ~AsRight:1,1
 }
 
-prove prop AssociateMut(add,sub,sub,sub) (Complex a, Complex b, Complex c) {
+prove prop AssociateMut(add,sub,sub,sub) (a: Complex, b: Complex, c: Complex) {
     let 2 add(sub(a,b),c)
     substitute ~InverseRight(add,sub)(-,c):1,0,1
     substitute ~AssociateMut:1,0
     substitute InverseRight:1
 }
 
-prove prop NegateLeft(sub,0)(Complex a) {
+prove prop NegateLeft(sub,0)(a: Complex) {
     let 2 sub(0,sub(0,a))
     substitute ~AssociateMut:1
     substitute Matching:1,0

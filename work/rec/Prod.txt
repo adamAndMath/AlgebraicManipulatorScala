@@ -12,26 +12,26 @@ using base.Mult;
 using base.Div;
 using base.Pow;
 
-inductive fn prod(Integer -> Complex f, Integer a, Integer b) {
+inductive fn prod(f: Integer -> Complex, a: Integer, b: Integer) {
     base b = a => f(a)
     step add(b,1) => mult(prod(f,a,b),f(add(b,1)))
 }
 
-prove ide Single(Integer -> Complex f, Integer a) {
+prove ide Single(f: Integer -> Complex, a: Integer) {
     let 2 prod(f,a,a)
     unwrap:1
 } result {
     prod(f,a,a)=f(a)
 }
 
-prove ide SuccRight(Integer -> Complex f, Integer a, Integer b) {
+prove ide SuccRight(f: Integer -> Complex, a: Integer, b: Integer) {
     let 2 prod(f,a,add(b,1))
     unwrap:1
 } result {
     prod(f,a,add(b,1))=mult(prod(f,a,b),f(add(b,1)))
 }
 
-inductive ide PredLeft(Integer -> Complex f, Integer a, Integer b) {
+inductive ide PredLeft(f: Integer -> Complex, a: Integer, b: Integer) {
     base b = a {
         let 2 prod(f,sub(a,1),a)
         substitute ~InverseRight(add,sub)(-,1):1,2
@@ -55,7 +55,7 @@ inductive ide PredLeft(Integer -> Complex f, Integer a, Integer b) {
     prod(f,sub(a,1),b)=mult(f(sub(a,1)),prod(f,a,b))
 }
 
-prove ide Identity(Integer -> Complex f, Integer a) {
+prove ide Identity(f: Integer -> Complex, a: Integer) {
     let 2 prod(f,a,sub(a,1))
     substitute ~InverseRight(div,mult)(-,f(a)):1
     substitute ~InverseRight(add,sub)(-,1):1,0,1,0
@@ -67,7 +67,7 @@ prove ide Identity(Integer -> Complex f, Integer a) {
     prod(f,a,sub(a,1))=1
 }
 
-inductive ide IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
+inductive ide IndexShift<i>(f: Integer -> Complex, a: Integer, b: Integer, c: Integer) {
     base b = sub(a,1) {
         let 2 1
         substitute ~Identity(i -> f(add(i,c)),a):0
@@ -92,7 +92,7 @@ inductive ide IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer 
     prod(i -> f(add(i,c)),a,b)=prod(f,add(a,c),add(b,c))
 }
 
-prove ide IndexShiftSub<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
+prove ide IndexShiftSub<i>(f: Integer -> Complex, a: Integer, b: Integer, c: Integer) {
     let 2 prod(i -> f(sub(i,c)),a,b)
     substitute ~InverseRight(add,sub)(-,c):1,[1|2]
     substitute ~IndexShift<i>:1
@@ -103,7 +103,7 @@ prove ide IndexShiftSub<i>(Integer -> Complex f, Integer a, Integer b, Integer c
     prod(i -> f(sub(i,c)),a,b)=prod(f,sub(a,c),sub(b,c))
 }
 
-inductive ide Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
+inductive ide Reverse<i>(f: Integer -> Complex, a: Integer, b: Integer) {
     base b=a {
         let 2 prod(f,a,a)
         substitute Single:1
@@ -137,7 +137,7 @@ inductive ide Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
     prod(f,a,b)=prod(i -> f(sub(0,i)),sub(0,b),sub(0,a))
 }
 
-prove ide FixedReverse<i>(Integer -> Complex f, Integer a, Integer b) {
+prove ide FixedReverse<i>(f: Integer -> Complex, a: Integer, b: Integer) {
     let 2 prod(f,a,b)
     substitute Reverse<i>:1
     substitute ~Matching(sub,-)(a):1,1,0
@@ -153,7 +153,7 @@ prove ide FixedReverse<i>(Integer -> Complex f, Integer a, Integer b) {
     prod(f,a,b)=prod(i -> f(sub(add(a,b),i)),a,b)
 }
 
-inductive ide RangeSplit(Integer -> Complex f, Integer a, Integer b, Integer c) {
+inductive ide RangeSplit(f: Integer -> Complex, a: Integer, b: Integer, c: Integer) {
     base c=b {
         let 2 prod(f,a,b);
         substitute ~IdentityRight(mult,-):1;
@@ -175,7 +175,7 @@ inductive ide RangeSplit(Integer -> Complex f, Integer a, Integer b, Integer c) 
     prod(f,a,c)=mult(prod(f,a,b),prod(f,add(b,1),c))
 }
 
-inductive ide Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer a, Integer b) {
+inductive ide Distribute<i>(f: Integer -> Complex, g: Integer -> Complex, a: Integer, b: Integer) {
     base b=a {
         let 2 mult(f(a),g(a));
         wrap i -> mult(f(i),g(i)):0
@@ -204,7 +204,7 @@ inductive ide Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer 
     prod(i -> mult(f(i),g(i)),a,b)=mult(prod(f,a,b),prod(g,a,b))
 }
 
-prove ide DistributeDiv<i>(Integer -> Complex f, Integer -> Complex g, Integer a, Integer b) {
+prove ide DistributeDiv<i>(f: Integer -> Complex, g: Integer -> Complex, a: Integer, b: Integer) {
     let 2 prod(i -> div(f(i),g(i)),a,b)
     substitute ~InverseRight(div,mult)(-,prod(g,a,b)):1
     substitute ~Distribute<i>:1,0
@@ -215,7 +215,7 @@ prove ide DistributeDiv<i>(Integer -> Complex f, Integer -> Complex g, Integer a
     prod(i -> div(f(i),g(i)),a,b)=div(prod(f,a,b),prod(g,a,b))
 }
 
-inductive ide Commute<i,j>((Integer,Integer) -> Complex f, Integer a1, Integer b1, Integer a2, Integer b2) {
+inductive ide Commute<i,j>(f: (Integer,Integer) -> Complex, a: Integer1, b: Integer1, a: Integer2, b: Integer2) {
     base b1=a1 {
         let 2 prod(j -> f(a1,j),a2,b2)
         wrap i -> prod(j -> f(i,j),a2,b2):0
@@ -243,7 +243,7 @@ inductive ide Commute<i,j>((Integer,Integer) -> Complex f, Integer a1, Integer b
     prod(i -> prod(j -> f(i,j),a2,b2),a1,b1)=prod(j -> prod(i -> f(i,j),a1,b1),a2,b2)
 }
 
-inductive ide TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, Integer n) {
+inductive ide TriangleCommute<i,j>(f: (Integer,Integer) -> Complex, a: Integer, n: Integer) {
     base n=a {
         let 2 f(a,a)
         wrap j -> f(a,j):0

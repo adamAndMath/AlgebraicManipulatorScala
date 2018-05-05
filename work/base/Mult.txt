@@ -11,7 +11,7 @@ assume prop Associate(mult)
 
 assume prop IdentityRight(mult,1)
 
-prove prop IdentityLeft(mult,1)(Complex a) {
+prove prop IdentityLeft(mult,1)(a: Complex) {
     let 2 mult(1,a)
     substitute Commute:1
     substitute IdentityRight:1
@@ -19,55 +19,55 @@ prove prop IdentityLeft(mult,1)(Complex a) {
 
 assume prop DistributeRight(mult,add)
 
-prove prop DistributeLeft(mult,add)(Complex a, Complex b, Complex c) {
+prove prop DistributeLeft(mult,add)(a: Complex, b: Complex, c: Complex) {
     let 2 mult(c,add(a,b))
     substitute Commute:1
     substitute DistributeRight:1
     substitute Commute:1,[0|1]
 }
 
-prove prop OuterCommuteRight(mult,mult)(Complex a, Complex b, Complex c) {
+prove prop OuterCommuteRight(mult,mult)(a: Complex, b: Complex, c: Complex) {
     let 2 mult(mult(a,b),c)
     substitute Associate:1
     substitute Commute:1,1
     substitute ~Associate:1
 }
 
-prove prop OuterCommuteLeft(mult,mult)(Complex a, Complex b, Complex c) {
+prove prop OuterCommuteLeft(mult,mult)(a: Complex, b: Complex, c: Complex) {
     let 2 mult(a,mult(b,c))
     substitute ~Associate:1
     substitute Commute:1,0
     substitute Associate:1
 }
 
-prove prop DistributeRight(mult,sub)(Complex a, Complex b, Complex f) {
+prove prop DistributeRight(mult,sub)(a: Complex, b: Complex, f: Complex) {
     let 2 sub(mult(a,f),mult(b,f));
     substitute ~InverseRight(add,sub)(-,b):0,0,0;
     substitute DistributeRight:0,0;
     substitute InverseRight(sub,add):0;
 }
 
-prove prop DistributeLeft(mult,sub)(Complex a, Complex b, Complex f) {
+prove prop DistributeLeft(mult,sub)(a: Complex, b: Complex, f: Complex) {
     let 2 sub(mult(f,a),mult(f,b));
     substitute ~InverseRight(add,sub)(-,b):0,0,1;
     substitute DistributeLeft:0,0;
     substitute InverseRight(sub,add):0;
 }
 
-prove prop AnnihilatorRight(mult,0)(Complex a) {
+prove prop AnnihilatorRight(mult,0)(a: Complex) {
     let 2 mult(a,0)
     substitute ~Matching(sub,-)(1):1,1
     substitute DistributeLeft:1
     substitute Matching:1
 }
 
-prove prop AnnihilatorLeft(mult,0)(Complex a) {
+prove prop AnnihilatorLeft(mult,0)(a: Complex) {
     let 2 mult(0,a)
     substitute Commute:1
     substitute AnnihilatorRight:1
 }
 
-prove ide NegAsMult(Complex a) {
+prove ide NegAsMult(a: Complex) {
     let 3 sub(0,a);
     substitute ~AnnihilatorRight(mult,-)(a):[1,0|2,0];
     substitute ~IdentityRight(mult,-):[1,1|2,1];

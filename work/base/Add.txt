@@ -7,7 +7,7 @@ assume prop Commute(add)
 
 assume prop IdentityRight(add,0)
 
-prove prop IdentityLeft(add,0)(Complex a) {
+prove prop IdentityLeft(add,0)(a: Complex) {
     let 2 add(0,a)
     substitute Commute:1
     substitute IdentityRight:1
@@ -15,14 +15,14 @@ prove prop IdentityLeft(add,0)(Complex a) {
 
 assume prop Associate(add)
 
-prove prop OuterCommuteRight(add,add)(Complex a, Complex b, Complex c) {
+prove prop OuterCommuteRight(add,add)(a: Complex, b: Complex, c: Complex) {
     let 2 add(add(a,b),c)
     substitute Associate:1
     substitute Commute:1,1
     substitute ~Associate:1
 }
 
-prove prop OuterCommuteLeft(add,add)(Complex a, Complex b, Complex c) {
+prove prop OuterCommuteLeft(add,add)(a: Complex, b: Complex, c: Complex) {
     let 2 add(a,add(b,c))
     substitute ~Associate:1
     substitute Commute:1,0

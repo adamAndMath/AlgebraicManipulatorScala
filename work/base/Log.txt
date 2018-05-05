@@ -12,40 +12,40 @@ assume prop InverseLeft(log, pow)
 
 assume prop InverseLeft(pow, log)
 
-prove prop Matching(log, 1)(Complex a) {
+prove prop Matching(log, 1)(a: Complex) {
 	let 2 log(a,a)
 	substitute ~IdentityRight(pow,-):1,1
 	substitute InverseLeft:1
 }
 
-prove prop SingularityRight(log,1,0)(Complex a) {
+prove prop SingularityRight(log,1,0)(a: Complex) {
 	let 2 log(a,1)
 	substitute ~SingularityRight(pow,-,-)(a):1,1
 	substitute InverseLeft:1
 }
 
-prove prop DistributeMutLeft(log, mult, add)(Complex a, Complex b, Complex c) {
+prove prop DistributeMutLeft(log, mult, add)(a: Complex, b: Complex, c: Complex) {
 	let 2 log(c,mult(a,b))
 	substitute ~InverseLeft(pow,log)(c,-):1,1,[0|1]
 	substitute ~DistributeMutLeft:1,1
 	substitute InverseLeft:1
 }
 
-prove prop DistributeMutLeft(log, div, sub)(Complex a, Complex b, Complex c) {
+prove prop DistributeMutLeft(log, div, sub)(a: Complex, b: Complex, c: Complex) {
 	let 2 log(c,div(a,b))
 	substitute ~InverseLeft(pow,log)(c,-):1,1,[0|1]
 	substitute ~DistributeMutLeft:1,1
 	substitute InverseLeft:1
 }
 
-prove prop AssociateMut(mult, log, log, pow)(Complex a, Complex b, Complex p) {
+prove prop AssociateMut(mult, log, log, pow)(a: Complex, b: Complex, p: Complex) {
 	let 3 mult(log(a,b),p)
 	substitute ~InverseLeft(log,pow)(a,-):1
 	substitute ~AssociateMut:1,1
 	substitute InverseLeft(pow,log):1,1,0
 }
 
-prove ide ChangeBase(Complex a, Complex b, Complex c) {
+prove ide ChangeBase(a: Complex, b: Complex, c: Complex) {
     let 2 log(a,b);
     substitute ~InverseRight(div,mult)(-,log(c,a)):1;
     substitute Commute:1,0;

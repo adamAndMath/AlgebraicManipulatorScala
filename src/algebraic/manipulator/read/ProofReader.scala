@@ -112,8 +112,8 @@ object ProofReader {
     }
 
   def readDefinition(tokens: Tokens): Read[Definition] = {
-    val (tp, t1) = readType(tokens)
-    val (v, t2) = readVariable(t1)
+    val (v, t1) = readVariable(tokens)
+    val (tp, t2) = readType(t1.expect(COLON))
     (Definition(tp, v), t2)
   }
 

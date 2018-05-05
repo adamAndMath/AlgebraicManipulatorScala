@@ -7,7 +7,7 @@ import base.Div
 import base.Pow
 using Sum.sum
 
-prove ide GeometricSum<i>(Complex a, Integer n) {
+prove ide GeometricSum<i>(a: Complex, n: Integer) {
     let 2 sum(i -> pow(a,i),0,n)
     substitute ~InverseRight(add,sub)(-,1):1,0,0,1
     substitute Commute:1,0,0,1

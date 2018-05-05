@@ -11,26 +11,26 @@ using base.Mult;
 using base.Div;
 using base.Pow;
 
-inductive fn sum(Integer -> Complex f, Integer a, Integer b) {
+inductive fn sum(f: Integer -> Complex, a: Integer, b: Integer) {
     base b = a => f(a)
     step add(b,1) => add(sum(f,a,b),f(add(b,1)))
 }
 
-prove ide Single(Integer -> Complex f, Integer a) {
+prove ide Single(f: Integer -> Complex, a: Integer) {
     let 2 sum(f,a,a)
     unwrap:1
 } result {
     sum(f,a,a)=f(a)
 }
 
-prove ide SuccRight(Integer -> Complex f, Integer a, Integer b) {
+prove ide SuccRight(f: Integer -> Complex, a: Integer, b: Integer) {
     let 2 sum(f,a,add(b,1))
     unwrap:1
 } result {
     sum(f,a,add(b,1))=add(sum(f,a,b),f(add(b,1)))
 }
 
-inductive ide PredLeft(Integer -> Complex f, Integer a, Integer b) {
+inductive ide PredLeft(f: Integer -> Complex, a: Integer, b: Integer) {
     base b = a {
         let 2 sum(f,sub(a,1),a)
         substitute ~InverseRight(add,sub)(-,1):1,2
@@ -54,7 +54,7 @@ inductive ide PredLeft(Integer -> Complex f, Integer a, Integer b) {
     sum(f,sub(a,1),b)=add(f(sub(a,1)),sum(f,a,b))
 }
 
-prove ide Identity(Integer -> Complex f, Integer a) {
+prove ide Identity(f: Integer -> Complex, a: Integer) {
     let 2 sum(f,a,sub(a,1))
     substitute ~InverseRight(sub,add)(-,f(a)):1
     substitute ~InverseRight(add,sub)(-,1):1,0,1,0
@@ -66,7 +66,7 @@ prove ide Identity(Integer -> Complex f, Integer a) {
     sum(f,a,sub(a,1))=0
 }
 
-inductive ide IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
+inductive ide IndexShift<i>(f: Integer -> Complex, a: Integer, b: Integer, c: Integer) {
     base b = sub(a,1) {
         let 2 0
         substitute ~Identity(i -> f(add(i,c)),a):0
@@ -91,7 +91,7 @@ inductive ide IndexShift<i>(Integer -> Complex f, Integer a, Integer b, Integer 
     sum(i -> f(add(i,c)),a,b)=sum(f,add(a,c),add(b,c))
 }
 
-prove ide IndexShiftSub<i>(Integer -> Complex f, Integer a, Integer b, Integer c) {
+prove ide IndexShiftSub<i>(f: Integer -> Complex, a: Integer, b: Integer, c: Integer) {
     let 2 sum(i -> f(sub(i,c)),a,b)
     substitute ~InverseRight(add,sub)(-,c):1,[1|2]
     substitute ~IndexShift<i>:1
@@ -102,7 +102,7 @@ prove ide IndexShiftSub<i>(Integer -> Complex f, Integer a, Integer b, Integer c
     sum(i -> f(sub(i,c)),a,b)=sum(f,sub(a,c),sub(b,c))
 }
 
-inductive ide Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
+inductive ide Reverse<i>(f: Integer -> Complex, a: Integer, b: Integer) {
     base b=a {
         let 2 sum(f,a,a)
         substitute Single:1
@@ -136,7 +136,7 @@ inductive ide Reverse<i>(Integer -> Complex f, Integer a, Integer b) {
     sum(f,a,b)=sum(i -> f(sub(0,i)),sub(0,b),sub(0,a))
 }
 
-prove ide FixedReverse<i>(Integer -> Complex f, Integer a, Integer b) {
+prove ide FixedReverse<i>(f: Integer -> Complex, a: Integer, b: Integer) {
     let 2 sum(f,a,b)
     substitute Reverse<i>:1
     substitute ~Matching(sub,-)(a):1,1,0
@@ -152,7 +152,7 @@ prove ide FixedReverse<i>(Integer -> Complex f, Integer a, Integer b) {
     sum(f,a,b)=sum(i -> f(sub(add(a,b),i)),a,b)
 }
 
-inductive ide RangeSplit(Integer -> Complex f, Integer a, Integer b, Integer c) {
+inductive ide RangeSplit(f: Integer -> Complex, a: Integer, b: Integer, c: Integer) {
     base c=b {
         let 2 sum(f,a,b);
         substitute ~IdentityRight(add,-):1;
@@ -174,7 +174,7 @@ inductive ide RangeSplit(Integer -> Complex f, Integer a, Integer b, Integer c) 
     sum(f,a,c)=add(sum(f,a,b),sum(f,add(b,1),c))
 }
 
-inductive ide Factor<i>(Integer -> Complex f, Complex c, Integer a, Integer b) {
+inductive ide Factor<i>(f: Integer -> Complex, c: Complex, a: Integer, b: Integer) {
     base b=a {
         let 2 sum(i -> mult(c,f(i)),a,a)
         substitute Single:0
@@ -198,7 +198,7 @@ inductive ide Factor<i>(Integer -> Complex f, Complex c, Integer a, Integer b) {
     mult(c,sum(f,a,b))=sum(i -> mult(c,f(i)),a,b)
 }
 
-inductive ide Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer a, Integer b) {
+inductive ide Distribute<i>(f: Integer -> Complex, g: Integer -> Complex, a: Integer, b: Integer) {
     base b=a {
         let 2 add(f(a),g(a));
         wrap i -> add(f(i),g(i)):0
@@ -229,7 +229,7 @@ inductive ide Distribute<i>(Integer -> Complex f, Integer -> Complex g, Integer 
     sum(i -> add(f(i),g(i)),a,b)=add(sum(f,a,b),sum(g,a,b))
 }
 
-prove ide DistributeSub<i>(Integer -> Complex f, Integer -> Complex g, Integer a, Integer b) {
+prove ide DistributeSub<i>(f: Integer -> Complex, g: Integer -> Complex, a: Integer, b: Integer) {
     let 2 sum(i -> sub(f(i),g(i)),a,b)
     substitute ~InverseRight(sub,add)(-,sum(g,a,b)):1
     substitute ~Distribute<i>:1,0
@@ -240,7 +240,7 @@ prove ide DistributeSub<i>(Integer -> Complex f, Integer -> Complex g, Integer a
     sum(i -> sub(f(i),g(i)),a,b)=sub(sum(f,a,b),sum(g,a,b))
 }
 
-inductive ide Commute<i,j>((Integer,Integer) -> Complex f, Integer a1, Integer b1, Integer a2, Integer b2) {
+inductive ide Commute<i,j>(f: (Integer,Integer) -> Complex, a: Integer1, b: Integer1, a: Integer2, b: Integer2) {
     base b1=a1 {
         let 2 sum(j -> f(a1,j),a2,b2)
         wrap i -> sum(j -> f(i,j),a2,b2):0
@@ -268,7 +268,7 @@ inductive ide Commute<i,j>((Integer,Integer) -> Complex f, Integer a1, Integer b
     sum(i -> sum(j -> f(i,j),a2,b2),a1,b1)=sum(j -> sum(i -> f(i,j),a1,b1),a2,b2)
 }
 
-inductive ide TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, Integer n) {
+inductive ide TriangleCommute<i,j>(f: (Integer,Integer) -> Complex, a: Integer, n: Integer) {
     base n=a {
         let 2 f(a,a)
         wrap j -> f(a,j):0
@@ -313,7 +313,7 @@ inductive ide TriangleCommute<i,j>((Integer,Integer) -> Complex f, Integer a, In
     sum(i -> sum(j -> f(i,j),a,i),a,n)=sum(j -> sum(i -> f(i,j),j,n),a,n)
 }
 
-/*induction Zip<i,j>(Integer -> Complex f, Integer n, Integer z) {
+/*induction Zip<i,j>(f: Integer -> Complex, n: Integer, z: Integer) {
     base n = sub(0,1) {
         let 2 0
         substitute ~Identity(i -> sum(j -> f(add(mult(z,i),j)),0,z),0):0

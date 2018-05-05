@@ -10,19 +10,19 @@ assume prop InverseRight(mult, div)
 
 assume prop InverseRight(div, mult)
 
-prove prop IdentityRight(div, 1)(Complex a) {
+prove prop IdentityRight(div, 1)(a: Complex) {
     let 2 div(a,1);
     substitute ~IdentityRight(mult,1):1;
     substitute InverseRight(mult,div)(-,1):1;
 }
 
-prove prop Matching(div, 1)(Complex a) {
+prove prop Matching(div, 1)(a: Complex) {
     let 2 div(a,a);
     substitute ~IdentityLeft(mult,1):1,0;
     substitute InverseRight(div,mult)(-,a):1;
 }
 
-prove prop AsRight(div, mult, 1)(Complex a, Complex b) {
+prove prop AsRight(div, mult, 1)(a: Complex, b: Complex) {
     let 2 div(a,b);
     substitute ~IdentityRight(mult,-):1,0;
     substitute ~InverseRight(mult,div)(-,b):1,0,1;
@@ -30,7 +30,7 @@ prove prop AsRight(div, mult, 1)(Complex a, Complex b) {
     substitute InverseRight:1;
 }
 
-prove prop OuterCommuteRight(div,div) (Complex a, Complex b, Complex c) {
+prove prop OuterCommuteRight(div,div) (a: Complex, b: Complex, c: Complex) {
     let 2 div(div(a,b),c)
     substitute AsRight:1
     substitute AsRight:1,0
@@ -39,14 +39,14 @@ prove prop OuterCommuteRight(div,div) (Complex a, Complex b, Complex c) {
     substitute ~AsRight:1
 }
 
-prove prop OuterCommuteRight(mult,div) (Complex a, Complex b, Complex c) {
+prove prop OuterCommuteRight(mult,div) (a: Complex, b: Complex, c: Complex) {
     let 2 mult(div(a,b),c)
     substitute AsRight:1,0
     substitute OuterCommuteRight:1
     substitute ~AsRight:1
 }
 
-prove prop AssociateMut(div,div,div,mult) (Complex a, Complex b, Complex c) {
+prove prop AssociateMut(div,div,div,mult) (a: Complex, b: Complex, c: Complex) {
     let 2 div(div(a,b),c)
     substitute ~InverseRight(mult,div)(-,mult(b,c)):1,0,0
     substitute Commute:1,0,0,1
@@ -55,21 +55,21 @@ prove prop AssociateMut(div,div,div,mult) (Complex a, Complex b, Complex c) {
     substitute InverseRight:1
 }
 
-prove prop AssociateMut(div,mult,mult,div) (Complex a, Complex b, Complex c) {
+prove prop AssociateMut(div,mult,mult,div) (a: Complex, b: Complex, c: Complex) {
     let 2 div(mult(a,b),c)
     substitute Commute:1,0
     substitute ~OuterCommuteRight:1
     substitute Commute:1
 }
 
-prove prop AssociateMut(mult,div,div,div) (Complex a, Complex b, Complex c) {
+prove prop AssociateMut(mult,div,div,div) (a: Complex, b: Complex, c: Complex) {
     let 2 mult(div(a,b),c)
     substitute ~InverseRight(mult,div)(-,c):1,0,1
     substitute ~AssociateMut:1,0
     substitute InverseRight:1
 }
 
-prove ide MultFrac(Complex a, Complex b, Complex c, Complex d) {
+prove ide MultFrac(a: Complex, b: Complex, c: Complex, d: Complex) {
     let 2 mult(div(a,c),div(b,d))
     substitute ~AssociateMut:1
     substitute OuterCommuteRight:1,0
@@ -78,28 +78,28 @@ prove ide MultFrac(Complex a, Complex b, Complex c, Complex d) {
     mult(div(a,c),div(b,d))=div(mult(a,b),mult(c,d))
 }
 
-prove prop DistributeRight(div,add)(Complex a, Complex b, Complex f) {
+prove prop DistributeRight(div,add)(a: Complex, b: Complex, f: Complex) {
     let 2 div(add(a,b),f)
     substitute AsRight:1
     substitute DistributeRight:1
     substitute ~AsRight:1,[0|1]
 }
 
-prove prop DistributeRight(div,sub)(Complex a, Complex b, Complex f) {
+prove prop DistributeRight(div,sub)(a: Complex, b: Complex, f: Complex) {
     let 2 div(sub(a,b),f)
     substitute AsRight:1
     substitute DistributeRight:1
     substitute ~AsRight:1,[0|1]
 }
 
-prove prop NegateLeft(div,1)(Complex a) {
+prove prop NegateLeft(div,1)(a: Complex) {
     let 2 div(1,div(1,a))
     substitute ~AssociateMut:1
     substitute Matching:1,0
     substitute IdentityLeft:1
 }
 
-prove prop AnnihilatorLeft(div,0)(Complex a) {
+prove prop AnnihilatorLeft(div,0)(a: Complex) {
     let 2 div(sub(1,1),a)
     substitute DistributeRight:1;
     substitute Matching:[0,0|1]

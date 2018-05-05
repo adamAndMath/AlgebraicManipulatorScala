@@ -15,21 +15,21 @@ assume prop IdentityRight(pow,1)
 
 assume prop AssociateMut(pow,pow,pow,mult)//[a>0]
 
-prove prop DistributeMutLeft(pow,sub,div)(Complex n, Complex m, Complex a) {
+prove prop DistributeMutLeft(pow,sub,div)(n: Complex, m: Complex, a: Complex) {
     let 2 div(pow(a,n),pow(a,m))
     substitute ~InverseRight(add,sub)(-,m):0,0,1
     substitute DistributeMutLeft:0,0
     substitute InverseRight:0
 }
 
-prove prop SingularityRight(pow,0,1)(Complex a) {
+prove prop SingularityRight(pow,0,1)(a: Complex) {
     let 2 pow(a,0);
     substitute ~Matching(sub,-)(1):1,1;
     substitute DistributeMutLeft:1;
     substitute Matching:1;
 }
 
-prove prop AnnihilatorLeft(pow,0)(Complex a) {
+prove prop AnnihilatorLeft(pow,0)(a: Complex) {
     let 2 pow(0,a);
     substitute ~InverseRight(add,sub)(-,1):1,1;
     substitute DistributeMutLeft:1;
@@ -37,7 +37,7 @@ prove prop AnnihilatorLeft(pow,0)(Complex a) {
     substitute AnnihilatorRight:1;
 }
 
-inductive prop AssociateMut(pow,pow,pow,mult)(Complex a, Complex n, Integer m) {
+inductive prop AssociateMut(pow,pow,pow,mult)(a: Complex, n: Complex, m: Integer) {
     base m=1 {
         let 2 pow(a,n)
         substitute ~IdentityRight(pow,-):0

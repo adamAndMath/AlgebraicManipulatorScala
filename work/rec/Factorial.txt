@@ -5,7 +5,7 @@ import base.Sub
 import base.Mult
 using Prod.prod
 
-inductive fn factorial(Natural n) {
+inductive fn factorial(n: Natural) {
     base n=0 => 1
     step add(n,1) => mult(add(n,1),factorial(n))
 }
@@ -28,14 +28,14 @@ prove ide One {
     factorial(1) = 1
 }
 
-prove ide Succ(Natural n) {
+prove ide Succ(n: Natural) {
     let 2 factorial(add(n,1))
     unwrap:1
 } result {
     factorial(add(n,1))=mult(add(n,1),factorial(n))
 }
 
-inductive ide Prod<i>(Natural n) {
+inductive ide Prod<i>(n: Natural) {
     base n = 0 {
         let 2 1
         substitute ~Zero:0
